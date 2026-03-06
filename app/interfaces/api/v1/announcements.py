@@ -6,27 +6,33 @@ from app.infrastructure.database import get_db
 from app.infrastructure.models import AnnouncementModel, ResidentialComplexModel, UserModel, AnnouncementEmotionModel, CommentModel, CommentEmotionModel
 from app.domain.entities import UserRole
 from app.interfaces.api.deps import get_current_user, RoleChecker
+from app.infrastructure.logging_config import logger
 from .schemas import AnnouncementCreate, AnnouncementOut, EmotionCreate, EmotionCount, CommentCreate, CommentOut, UserReaction
 
 router = APIRouter()
 
+# Access: Admins or managers assigned to the complex.
 @router.post("/", response_model=AnnouncementOut)
 def create_announcement(
     announcement_in: AnnouncementCreate,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
+    logger.info(f"User {current_user.username} (ID: {current_user.id}) creating announcement: {announcement_in.title}")
     # Check complex exists
     complex_obj = db.query(ResidentialComplexModel).filter(ResidentialComplexModel.id == announcement_in.complex_id).first()
     if not complex_obj:
+        logger.error(f"Announcement creation failed: Complex ID {announcement_in.complex_id} not found")
         raise HTTPException(status_code=404, detail="Residential complex not found")
 
     # Authorization
     if current_user.role not in [UserRole.ADMIN, UserRole.SITE_MANAGER]:
+        logger.warning(f"Unauthorized announcement creation attempt by {current_user.username}")
         raise HTTPException(status_code=403, detail="Only admins and site managers can create announcements")
     
     if current_user.role == UserRole.SITE_MANAGER:
         if complex_obj not in current_user.assigned_complexes:
+            logger.warning(f"Unauthorized announcement creation attempt by manager {current_user.username} for complex ID {announcement_in.complex_id}")
             raise HTTPException(status_code=403, detail="You can only create announcements for your assigned complexes")
 
     new_announcement = AnnouncementModel(
@@ -40,6 +46,7 @@ def create_announcement(
     db.add(new_announcement)
     db.commit()
     db.refresh(new_announcement)
+    logger.info(f"Announcement created successfully: {new_announcement.title} (ID: {new_announcement.id})")
     return new_announcement
 
 def get_comment_tree(db: Session, announcement_id: int, parent_id: int = None) -> List[CommentOut]:
@@ -73,9 +80,12 @@ def get_comment_tree(db: Session, announcement_id: int, parent_id: int = None) -
         result.append(c_out)
     return result
 
-@router.get("/", response_model=List[AnnouncementOut])
+# Access: Admins see all announcements; others see announcements for assigned complexes.
+@router.get("/", response_model=List[AnnouncementOut], summary="List Announcements", description="Retrieves a list of announcements. Admins can see all announcements. Other users can only see announcements for the complexes they are assigned to. Can be filtered by complex_id.")
 def read_announcements(
     complex_id: int = None,
+    skip: int = 0,
+    limit: int = 50,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
@@ -83,21 +93,16 @@ def read_announcements(
     if complex_id:
         query = query.filter(AnnouncementModel.complex_id == complex_id)
     
-    announcements = query.all()
-    
     # Filter by user's complexes
     if current_user.role == UserRole.ADMIN:
-        pass
+        announcements = query.offset(skip).limit(limit).all()
     else:
-        # Residents and others only see announcements for complexes they belong to
         assigned_complex_ids = [c.id for c in current_user.assigned_complexes]
-        
-        # If user is a resident, they might be linked via buildings
         if current_user.role == UserRole.SITE_RESIDENT:
             building_complex_ids = [b.complex_id for b in current_user.assigned_buildings]
             assigned_complex_ids = list(set(assigned_complex_ids + building_complex_ids))
-            
-        announcements = [a for a in announcements if a.complex_id in assigned_complex_ids]
+        
+        announcements = query.filter(AnnouncementModel.complex_id.in_(assigned_complex_ids)).offset(skip).limit(limit).all()
 
     result = []
     for a in announcements:
@@ -125,7 +130,8 @@ def read_announcements(
         
     return result
 
-@router.post("/{announcement_id}/emotions")
+# Access: Any authenticated user.
+@router.post("/{announcement_id}/emotions", summary="React to Announcement", description="Adds or updates an emoji reaction to an announcement. Restricted to users assigned to the announcement's complex.")
 def react_to_announcement(
     announcement_id: int,
     emotion_in: EmotionCreate,
@@ -159,15 +165,18 @@ def react_to_announcement(
     db.commit()
     return {"message": "Reaction recorded"}
 
-@router.get("/{announcement_id}/reactions", response_model=List[UserReaction])
+# Access: Any authenticated user with complex access to the announcement.
+@router.get("/{announcement_id}/reactions", response_model=List[UserReaction], summary="Get Announcement Reactions", description="Retrieves a list of users and their emoji reactions for a specific announcement. Restricted to users who have access to the announcement's complex.")
 def get_announcement_reactions(
     announcement_id: int,
+    skip: int = 0,
+    limit: int = 50,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
     reactions = db.query(AnnouncementEmotionModel).filter(
         AnnouncementEmotionModel.announcement_id == announcement_id
-    ).all()
+    ).offset(skip).limit(limit).all()
     
     result = []
     for r in reactions:
@@ -176,7 +185,8 @@ def get_announcement_reactions(
             result.append(UserReaction(user_id=user.id, username=user.username, emoji=r.emoji))
     return result
 
-@router.put("/{announcement_id}", response_model=AnnouncementOut)
+# Access: Admins or managers assigned to the announcement's complex.
+@router.put("/{announcement_id}", response_model=AnnouncementOut, summary="Update Announcement", description="Updates an announcement's details. Restricted to Admins or Site Managers assigned to the announcement's complex.")
 def update_announcement(
     announcement_id: int,
     announcement_in: AnnouncementCreate,
@@ -206,7 +216,8 @@ def update_announcement(
     db.refresh(announcement)
     return announcement
 
-@router.delete("/{announcement_id}")
+# Access: Admins or managers assigned to the complex.
+@router.delete("/{announcement_id}", summary="Delete Announcement", description="Deletes an announcement. Restricted to Admins or Site Managers assigned to the announcement's complex.")
 def delete_announcement(
     announcement_id: int,
     db: Session = Depends(get_db),
@@ -229,7 +240,8 @@ def delete_announcement(
     db.commit()
     return {"message": "Announcement deleted successfully"}
 
-@router.post("/{announcement_id}/comments", response_model=CommentOut)
+# Access: Admins or users assigned to the announcement's complex (comments must be enabled).
+@router.post("/{announcement_id}/comments", response_model=CommentOut, summary="Create Comment", description="Creates a new comment on an announcement. Restricted to Admins or users assigned to the announcement's complex. Comments must be enabled for the announcement.")
 def create_comment(
     announcement_id: int,
     comment_in: CommentCreate,
@@ -275,7 +287,8 @@ def create_comment(
         replies=[]
     )
 
-@router.post("/comments/{comment_id}/emotions")
+# Access: Any authenticated user.
+@router.post("/comments/{comment_id}/emotions", summary="React to Comment", description="Adds or updates an emoji reaction to a comment.")
 def react_to_comment(
     comment_id: int,
     emotion_in: EmotionCreate,
@@ -304,15 +317,18 @@ def react_to_comment(
     db.commit()
     return {"message": "Reaction recorded"}
 
-@router.get("/comments/{comment_id}/reactions", response_model=List[UserReaction])
+# Access: Any authenticated user.
+@router.get("/comments/{comment_id}/reactions", response_model=List[UserReaction], summary="Get Comment Reactions", description="Retrieves a list of users and their emoji reactions for a specific comment.")
 def get_comment_reactions(
     comment_id: int,
+    skip: int = 0,
+    limit: int = 50,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
     reactions = db.query(CommentEmotionModel).filter(
         CommentEmotionModel.comment_id == comment_id
-    ).all()
+    ).offset(skip).limit(limit).all()
     
     result = []
     for r in reactions:
@@ -321,7 +337,8 @@ def get_comment_reactions(
             result.append(UserReaction(user_id=user.id, username=user.username, emoji=r.emoji))
     return result
 
-@router.put("/comments/{comment_id}", response_model=CommentOut)
+# Access: Comment creator only.
+@router.put("/comments/{comment_id}", response_model=CommentOut, summary="Update Comment", description="Updates a comment's content. Restricted to the user who created the comment.")
 def update_comment(
     comment_id: int,
     comment_in: CommentCreate,
@@ -357,7 +374,8 @@ def update_comment(
         replies=[]
     )
 
-@router.delete("/comments/{comment_id}")
+# Access: Comment creator, admins, or managers assigned to the announcement's complex.
+@router.delete("/comments/{comment_id}", summary="Delete Comment", description="Deletes a comment. Restricted to the comment creator, Admins, or Site Managers assigned to the announcement's complex.")
 def delete_comment(
     comment_id: int,
     db: Session = Depends(get_db),
@@ -383,7 +401,8 @@ def delete_comment(
     db.commit()
     return {"message": "Comment deleted successfully"}
 
-@router.delete("/{announcement_id}/emotions")
+# Access: Admins or the reacting user.
+@router.delete("/{announcement_id}/emotions", summary="Remove Announcement Reaction", description="Removes a user's emoji reaction from an announcement. Restricted to Admins or the user who reacted.")
 def remove_announcement_reaction(
     announcement_id: int,
     db: Session = Depends(get_db),
@@ -401,7 +420,8 @@ def remove_announcement_reaction(
     db.commit()
     return {"message": "Reaction removed"}
 
-@router.delete("/comments/{comment_id}/emotions")
+# Access: Admins or the reacting user.
+@router.delete("/comments/{comment_id}/emotions", summary="Remove Comment Reaction", description="Removes a user's emoji reaction from a comment. Restricted to Admins or the user who reacted.")
 def remove_comment_reaction(
     comment_id: int,
     db: Session = Depends(get_db),

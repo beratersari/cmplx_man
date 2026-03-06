@@ -9,6 +9,12 @@ class UserRole(str, Enum):
     SITE_ATTENDANT = "site_attendant"
     SITE_RESIDENT = "site_resident"
 
+class IssueStatus(str, Enum):
+    OPEN = "OPEN"
+    IN_PROGRESS = "IN_PROGRESS"
+    RESOLVED = "RESOLVED"
+    CLOSED = "CLOSED"
+
 class AuditBase(BaseModel):
     created_date: datetime = datetime.utcnow()
     created_by: Optional[int] = None

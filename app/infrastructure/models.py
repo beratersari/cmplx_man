@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, E
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
-from app.domain.entities import UserRole
+from app.domain.entities import UserRole, IssueStatus
 
 class AuditMixin:
     created_date = Column(DateTime, default=datetime.utcnow)
@@ -37,6 +37,7 @@ class ResidentialComplexModel(Base, AuditMixin):
     buildings = relationship("BuildingModel", back_populates="complex")
     assigned_users = relationship("UserModel", secondary=complex_assignments, back_populates="assigned_complexes")
     announcements = relationship("AnnouncementModel", back_populates="complex")
+    issues = relationship("IssueModel", back_populates="complex")
 
 class AnnouncementModel(Base, AuditMixin):
     __tablename__ = "announcements"
@@ -125,3 +126,27 @@ class UserModel(Base, AuditMixin):
     vehicles = relationship("VehicleModel", back_populates="user", cascade="all, delete-orphan")
     announcement_emotions = relationship("AnnouncementEmotionModel", back_populates="user")
     comment_emotions = relationship("CommentEmotionModel", back_populates="user")
+    issues = relationship("IssueModel", back_populates="user")
+
+class IssueModel(Base, AuditMixin):
+    __tablename__ = "issues"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    description = Column(String)
+    complex_id = Column(Integer, ForeignKey("residential_complexes.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    status = Column(SQLEnum(IssueStatus), default=IssueStatus.OPEN)
+
+    complex = relationship("ResidentialComplexModel", back_populates="issues")
+    user = relationship("UserModel", back_populates="issues")
+    images = relationship("IssueImageModel", back_populates="issue", cascade="all, delete-orphan")
+
+class IssueImageModel(Base):
+    __tablename__ = "issue_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    issue_id = Column(Integer, ForeignKey("issues.id"))
+    img_path = Column(String)
+
+    issue = relationship("IssueModel", back_populates="images")

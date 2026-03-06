@@ -1,13 +1,11 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from app.infrastructure.database import engine, Base
 from app.infrastructure.models import UserModel
 from app.infrastructure.security import get_password_hash
 from app.domain.entities import UserRole
 from app.infrastructure.database import SessionLocal
 from app.infrastructure.mock_data import seed_mock_data
-from app.interfaces.api.v1 import auth, users, complexes, buildings, announcements, vehicles, issues
-from app.infrastructure.logging_config import logger
-import time
+from app.interfaces.api.v1 import auth, users, complexes, buildings, announcements, vehicles
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -18,15 +16,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = (time.time() - start_time) * 1000
-    formatted_process_time = "{0:.2f}ms".format(process_time)
-    logger.info(f"RID: {request.scope.get('root_path')} - {request.method} {request.url.path} - Status: {response.status_code} - Completed in {formatted_process_time}")
-    return response
-
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
@@ -34,7 +23,6 @@ app.include_router(complexes.router, prefix="/api/v1/complexes", tags=["Resident
 app.include_router(buildings.router, prefix="/api/v1/buildings", tags=["Buildings"])
 app.include_router(announcements.router, prefix="/api/v1/announcements", tags=["Announcements"])
 app.include_router(vehicles.router, prefix="/api/v1/vehicles", tags=["Vehicles"])
-app.include_router(issues.router, prefix="/api/v1/issues", tags=["Issues/Requests"])
 
 @app.on_event("startup")
 def startup_event():

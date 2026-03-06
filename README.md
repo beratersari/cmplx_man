@@ -5,18 +5,23 @@ A FastAPI-based application for managing apartment complexes, built using Clean 
 ## Features
 - **User Roles:** Admin, Site Manager, Site Attendant, Site Resident.
 - **Role-Based Access Control (RBAC):**
-  - **Admin:** Manage all residential complexes, buildings, and users.
-  - **Site Manager:** Manage their assigned residential complexes and buildings. Can assign other managers/attendants to their complexes.
-  - **Site Attendant:** Limited operations on assigned complexes.
-  - **Site Resident:** Assigned to a building via a separate relationship table.
-- **Audit Logging:** Tracks `created_date`, `created_by`, `update_date`, and `updated_by`.
-- **Account Management:** Uses `is_active` for user status.
+  - **Admin:** Full system access. Can manage all complexes, buildings, users, and vehicles.
+  - **Site Manager:** Manage their assigned residential complexes and buildings. Can create and manage users within their assigned complexes.
+  - **Site Attendant:** View and manage operations (like issues) within assigned complexes.
+  - **Site Resident:** Access to their own profile, vehicles, complex announcements, and reporting issues.
+- **Audit Logging:** Every entity tracks `created_date`, `created_by`, `updated_date`, and `updated_by`.
+- **Structured Logging:** Dual logging to console (colorful) and `app.log` (JSON format for ElasticSearch).
+- **Data Integrity Constraints:**
+  - A user can belong to **at most one building**.
+  - A user can belong to **at most one complex**.
+  - Site Managers can only assign or create users within the complexes they manage.
+  - Residents must be assigned to a complex before they can be assigned to a building within it.
 
 ## Tech Stack
 - **Framework:** FastAPI
 - **Database:** SQLite (SQLAlchemy ORM)
 - **Authentication:** JWT (jose), Bcrypt
-- **Architecture:** Clean Architecture
+- **Logging:** Python native logging + `python-json-logger` + `colorlog`
 
 ## Getting Started
 1. Install dependencies:
@@ -34,38 +39,58 @@ The application automatically creates an initial admin user on startup:
 - **Username:** `admin`
 - **Password:** `admin123`
 
-## Mock Data
-On startup, the application seeds mock data (if no complexes exist) including:
-- Two residential complexes
-- Multiple buildings
-- Manager, attendant, and resident accounts
-
 ## Project Structure
 - `app/domain`: Core entities and business logic.
-- `app/use_cases`: Application-specific business rules.
-- `app/infrastructure`: Database, security, and external services.
-- `app/interfaces`: API endpoints and controllers.
+- `app/infrastructure`: Database, security, and logging configuration.
+- `app/interfaces`: API endpoints (v1) and Pydantic schemas.
 
 ## API Endpoints
-- `/api/v1/auth/login`: Authenticate and get JWT token.
-- `/api/v1/users/`: Manage users (CRUD). Includes `contact` and `description` fields.
-- `/api/v1/complexes/`: Manage residential complexes (CRUD).
-- `/api/v1/complexes/assign`: Assign managers/attendants to complexes.
-- `/api/v1/complexes/{complex_id}/users`: List residents assigned to a complex (admins or assigned managers).
-- `/api/v1/buildings/`: Manage buildings within complexes (CRUD).
-- `/api/v1/buildings/assign`: Assign residents to buildings.
-- `/api/v1/buildings/{building_id}/users`: List residents assigned to a building (admins or assigned managers).
-- `/api/v1/vehicles/`: Manage vehicles (CRUD, residents can have multiple vehicles).
-- `/api/v1/announcements/`: Manage announcements (CRUD). Includes detailed reactions and comment tree.
-- `/api/v1/announcements/{id}/emotions`: React to announcements (Single reaction per user).
-- `/api/v1/announcements/{id}/reactions`: Get detailed reaction info.
-- `/api/v1/announcements/{id}/comments`: Add/Manage comments (Tree structure).
-- `/api/v1/announcements/comments/{id}/emotions`: React to comments.
-- `/api/v1/announcements/comments/{id}/reactions`: Get detailed reaction info for comments.
 
-### Special Rules
-- **Announcement Visibility:** Users only see announcements for complexes they are assigned to or buildings they reside in.
-- **Comment Edits:** When a comment is edited, all its existing reactions are automatically reset (deleted).
-- **Single Reaction:** A user can only have one reaction per announcement or comment. Posting a new reaction will replace the old one.
+### Pagination
+All collection GET endpoints support pagination via `skip` and `limit` query parameters (default `skip=0`, `limit=50`).
+
+### Authentication
+- `POST /api/v1/auth/login`: Authenticate and get JWT token.
+
+### Users
+- `GET /api/v1/users/me`: Get current user profile.
+- `POST /api/v1/users/`: Create a new user (Admin or Manager). Managers' created users are auto-assigned to the manager's complex.
+- `GET /api/v1/users/`: List users (Admin sees all, others see self).
+- `PUT /api/v1/users/{user_id}`: Update user details (RBAC enforced).
+- `DELETE /api/v1/users/{user_id}`: Delete user (Admin only).
+
+### Residential Complexes
+- `POST /api/v1/complexes/`: Create complex (Admin only).
+- `GET /api/v1/complexes/`: List complexes (RBAC filtered).
+- `PUT /api/v1/complexes/{complex_id}`: Update complex (Admin or assigned Manager).
+- `POST /api/v1/complexes/assign`: Assign a user to a complex (Admin or assigned Manager). Enforces single-complex constraint.
+- `GET /api/v1/complexes/{complex_id}/users`: List all users (staff and residents) in a complex.
+- `GET /api/v1/complexes/{complex_id}/users-by-role`: List users grouped by role (Admin or assigned Manager).
+
+### Buildings
+- `POST /api/v1/buildings/`: Create building in a complex.
+- `GET /api/v1/buildings/`: List buildings (Filtered by assignment).
+- `POST /api/v1/buildings/assign`: Assign a resident to a building. Enforces single-building constraint and complex membership check.
+
+### Announcements
+- `POST /api/v1/announcements/`: Create announcement for a complex.
+- `GET /api/v1/announcements/`: List announcements for assigned complexes.
+- `POST /api/v1/announcements/{id}/emotions`: React to an announcement.
+- `POST /api/v1/announcements/{id}/comments`: Add a comment (supports tree structure).
+
+### Vehicles
+- `POST /api/v1/vehicles/`: Register a vehicle for a user.
+- `GET /api/v1/vehicles/`: List vehicles (RBAC filtered).
+
+### Issues/Requests
+- `POST /api/v1/issues/`: Report an issue. Complex ID is automatically detected from the user's assignment.
+- `POST /api/v1/issues/admin`: Admin-only endpoint to create an issue for any specific complex.
+- `GET /api/v1/issues/`: List issues. Managers/Attendants see all in their complex; Residents see their own.
+- `PUT /api/v1/issues/{issue_id}`: Update issue status (Management only). Workflow: **OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED**.
+
+## Special Rules
+- **Automatic Context:** Many operations (like user creation by managers or issue reporting) automatically determine the `complex_id` from the authenticated user's context.
+- **Boundary Protection:** Managers cannot view or modify users, buildings, or issues outside of the complexes they are assigned to.
+- **Reaction Logic:** Users can have only one reaction per item; posting a new one replaces the previous. Editing a comment clears all its reactions.
 - **Deletions:** Removing an entity (Announcement, Comment, etc.) also cleans up its associated reactions and children.
 - **Audit Trails:** All entities track `created_by`, `created_date`, `updated_by`, and `updated_date`.

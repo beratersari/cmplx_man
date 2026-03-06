@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
-from app.domain.entities import UserRole
+from app.domain.entities import UserRole, IssueStatus
 
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")
@@ -73,18 +73,12 @@ class BuildingOut(BuildingBase):
 class VehicleBase(BaseModel):
     user_id: int = Field(..., gt=0)
     plate_number: str = Field(..., min_length=3, max_length=20)
-    make: Optional[str] = None
-    model: Optional[str] = None
-    color: Optional[str] = None
 
 class VehicleCreate(VehicleBase):
     pass
 
 class VehicleUpdate(BaseModel):
     plate_number: Optional[str] = Field(None, min_length=3, max_length=20)
-    make: Optional[str] = None
-    model: Optional[str] = None
-    color: Optional[str] = None
 
 class VehicleOut(VehicleBase):
     id: int
@@ -159,3 +153,38 @@ class AnnouncementOut(AnnouncementBase):
 
 class EmotionCreate(BaseModel):
     emoji: str = Field(..., pattern="^:(happy|sad|surprised|angry|heart):$")
+
+class IssueImageOut(BaseModel):
+    id: int
+    img_path: str
+
+    class Config:
+        from_attributes = True
+
+class IssueBase(BaseModel):
+    title: str = Field(..., min_length=3, max_length=100)
+    description: str = Field(..., min_length=5)
+
+class IssueCreate(IssueBase):
+    img_paths: List[str] = []
+
+class AdminIssueCreate(IssueCreate):
+    complex_id: int = Field(..., gt=0)
+
+class IssueOut(IssueBase):
+    id: int
+    user_id: int
+    complex_id: int
+    status: IssueStatus
+    created_date: datetime
+    updated_date: Optional[datetime] = None
+    updated_by: Optional[int] = None
+    images: List[IssueImageOut] = []
+
+    class Config:
+        from_attributes = True
+
+class IssueUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=3, max_length=100)
+    description: Optional[str] = Field(None, min_length=5)
+    status: Optional[IssueStatus] = None
