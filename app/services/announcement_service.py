@@ -9,6 +9,7 @@ from app.api.v1.schemas import (
     AnnouncementCreate, 
     EmotionCreate, 
     CommentCreate, 
+    ReplyCreate,
     CommentOut,
     EmotionCount,
     UserReaction,
@@ -192,7 +193,7 @@ class AnnouncementService:
         comment_in: CommentCreate, 
         current_user: UserModel
     ) -> CommentOut:
-        """Create a new comment on an announcement."""
+        """Create a new top-level comment on an announcement."""
         announcement = self.announcement_repo.get_by_id(announcement_id)
         if not announcement:
             raise HTTPException(status_code=404, detail="Announcement not found")
@@ -202,16 +203,11 @@ class AnnouncementService:
         
         self._validate_access_permission(current_user, announcement)
         
-        if comment_in.parent_id:
-            parent = self.announcement_repo.get_comment_by_id(comment_in.parent_id)
-            if not parent or parent.announcement_id != announcement_id:
-                raise HTTPException(status_code=404, detail="Parent comment not found")
-        
         new_comment = self.announcement_repo.create_comment(
             announcement_id=announcement_id,
             content=comment_in.content,
             user_id=current_user.id,
-            parent_id=comment_in.parent_id
+            parent_id=None
         )
         
         return CommentOut(
@@ -221,6 +217,46 @@ class AnnouncementService:
             parent_id=new_comment.parent_id,
             created_date=new_comment.created_date,
             created_by=new_comment.created_by,
+            username=current_user.username,
+            emotion_counts=[],
+            replies=[]
+        )
+    
+    def create_reply(
+        self, 
+        announcement_id: int, 
+        reply_in: ReplyCreate, 
+        current_user: UserModel
+    ) -> CommentOut:
+        """Create a reply to a comment on an announcement."""
+        announcement = self.announcement_repo.get_by_id(announcement_id)
+        if not announcement:
+            raise HTTPException(status_code=404, detail="Announcement not found")
+        
+        if not announcement.comments_enabled:
+            raise HTTPException(status_code=400, detail="Comments are disabled for this announcement")
+        
+        self._validate_access_permission(current_user, announcement)
+        
+        # Validate parent comment exists and belongs to this announcement
+        parent = self.announcement_repo.get_comment_by_id(reply_in.parent_id)
+        if not parent or parent.announcement_id != announcement_id:
+            raise HTTPException(status_code=404, detail="Parent comment not found")
+        
+        new_reply = self.announcement_repo.create_comment(
+            announcement_id=announcement_id,
+            content=reply_in.content,
+            user_id=current_user.id,
+            parent_id=reply_in.parent_id
+        )
+        
+        return CommentOut(
+            id=new_reply.id,
+            content=new_reply.content,
+            announcement_id=new_reply.announcement_id,
+            parent_id=new_reply.parent_id,
+            created_date=new_reply.created_date,
+            created_by=new_reply.created_by,
             username=current_user.username,
             emotion_counts=[],
             replies=[]

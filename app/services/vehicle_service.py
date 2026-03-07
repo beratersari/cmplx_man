@@ -2,10 +2,10 @@ from typing import List
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
-from app.repositories import VehicleRepository, UserRepository
+from app.repositories import VehicleRepository, UserRepository, ComplexRepository
 from app.models.models import UserModel, VehicleModel
 from app.core.entities import UserRole
-from app.api.v1.schemas import VehicleCreate, VehicleUpdate
+from app.api.v1.schemas import VehicleCreate, VehicleUpdate, VehicleStats, VehicleCountByComplex
 from app.core.logging_config import logger
 
 
@@ -16,6 +16,7 @@ class VehicleService:
         self.db = db
         self.vehicle_repo = VehicleRepository(db)
         self.user_repo = UserRepository(db)
+        self.complex_repo = ComplexRepository(db)
     
     def create_vehicle(
         self, 
@@ -122,6 +123,32 @@ class VehicleService:
         self.vehicle_repo.delete(vehicle)
         logger.info(f"Vehicle ID {vehicle_id} deleted successfully by {current_user.username}")
         return {"message": "Vehicle deleted successfully"}
+
+    def get_vehicle_stats_for_manager(self, current_user: UserModel) -> VehicleStats:
+        """Get vehicle statistics for a manager's complex."""
+        complex_id = self._get_manager_complex_id(current_user)
+        return self._build_vehicle_stats([complex_id])
+
+    def get_vehicle_stats_for_admin(self, complex_id: int) -> VehicleStats:
+        """Get vehicle statistics for a specific complex (admin)."""
+        self._ensure_complex_exists(complex_id)
+        return self._build_vehicle_stats([complex_id])
+
+    def _build_vehicle_stats(self, complex_ids: List[int]) -> VehicleStats:
+        """Build vehicle statistics for complexes."""
+        total = self.vehicle_repo.get_total_vehicle_count(complex_ids)
+        counts = self.vehicle_repo.get_vehicle_counts_by_complex(complex_ids)
+        return VehicleStats(
+            total_vehicles=total,
+            vehicles_by_complex=[
+                VehicleCountByComplex(
+                    complex_id=item["complex_id"],
+                    complex_name=item["complex_name"],
+                    vehicle_count=item["count"],
+                )
+                for item in counts
+            ],
+        )
     
     # Private validation methods
     def _validate_create_permission(self, current_user: UserModel, target_user: UserModel):
@@ -141,6 +168,19 @@ class VehicleService:
         
         logger.warning(f"Unauthorized vehicle registration attempt by {current_user.username}")
         raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    def _get_manager_complex_id(self, current_user: UserModel) -> int:
+        """Get a manager's assigned complex ID."""
+        if current_user.role != UserRole.SITE_MANAGER:
+            raise HTTPException(status_code=403, detail="Only site managers can access this endpoint")
+        if not current_user.assigned_complexes:
+            raise HTTPException(status_code=400, detail="Manager is not assigned to any complex")
+        return current_user.assigned_complexes[0].id
+
+    def _ensure_complex_exists(self, complex_id: int) -> None:
+        """Ensure the complex exists."""
+        if not self.complex_repo.get_by_id(complex_id):
+            raise HTTPException(status_code=404, detail="Complex not found")
     
     def _validate_modify_permission(self, current_user: UserModel, vehicle: VehicleModel):
         """Validate if current user can modify the vehicle."""

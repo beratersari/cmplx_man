@@ -1,5 +1,6 @@
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from app.models.models import ResidentialComplexModel, BuildingModel, UserModel, AnnouncementModel, AnnouncementEmotionModel, CommentModel, CommentEmotionModel, VehicleModel
+from app.models.models import ResidentialComplexModel, BuildingModel, UserModel, AnnouncementModel, AnnouncementEmotionModel, CommentModel, CommentEmotionModel, VehicleModel, VisitorModel, IssueCategoryModel, IssueModel, IssueImageModel
 from app.core.security import get_password_hash
 from app.core.entities import UserRole
 
@@ -209,4 +210,160 @@ def seed_mock_data(db: Session):
         created_by=resident4.id
     )
     db.add_all([vehicle1, vehicle2, vehicle3, vehicle4])
+    db.commit()
+
+    # Add visitors
+    today = datetime.utcnow()
+    yesterday = today - timedelta(days=1)
+    tomorrow = today + timedelta(days=1)
+
+    visitors = [
+        VisitorModel(
+            name="John Doe",
+            plate_number="VIS-1001",
+            visit_date=today,
+            complex_id=complex_a.id,
+            building_id=building_a1.id,
+            user_id=resident1.id,
+            created_by=resident1.id,
+        ),
+        VisitorModel(
+            name="Maria Lopez",
+            plate_number=None,
+            visit_date=today,
+            complex_id=complex_a.id,
+            building_id=building_a2.id,
+            user_id=resident2.id,
+            created_by=resident2.id,
+        ),
+        VisitorModel(
+            name="Alex Kim",
+            plate_number="VIS-2002",
+            visit_date=yesterday,
+            complex_id=complex_a.id,
+            building_id=building_a3.id,
+            user_id=resident3.id,
+            created_by=resident3.id,
+        ),
+        VisitorModel(
+            name="Sara Patel",
+            plate_number="VIS-3003",
+            visit_date=today,
+            complex_id=complex_b.id,
+            building_id=building_b1.id,
+            user_id=resident4.id,
+            created_by=resident4.id,
+        ),
+        VisitorModel(
+            name="Liam Chen",
+            plate_number=None,
+            visit_date=tomorrow,
+            complex_id=complex_b.id,
+            building_id=building_b2.id,
+            user_id=resident4.id,
+            created_by=resident4.id,
+        ),
+        VisitorModel(
+            name="Emma Wilson",
+            plate_number="VIS-1004",
+            visit_date=today,
+            complex_id=complex_a.id,
+            building_id=0,  # No building assigned
+            user_id=resident1.id,
+            created_by=resident1.id,
+        ),
+    ]
+    db.add_all(visitors)
+    db.commit()
+
+    # Add categories for issue types
+    categories_complex_a = [
+        IssueCategoryModel(name="Maintenance Request", complex_id=complex_a.id, created_by=manager.id),
+        IssueCategoryModel(name="Security Concern", complex_id=complex_a.id, created_by=manager.id),
+        IssueCategoryModel(name="Noise Complaint", complex_id=complex_a.id, created_by=manager.id),
+        IssueCategoryModel(name="General Inquiry", complex_id=complex_a.id, created_by=manager.id),
+    ]
+    categories_complex_b = [
+        IssueCategoryModel(name="Maintenance Request", complex_id=complex_b.id, created_by=manager2.id),
+        IssueCategoryModel(name="Security Concern", complex_id=complex_b.id, created_by=manager2.id),
+        IssueCategoryModel(name="Parking Issue", complex_id=complex_b.id, created_by=manager2.id),
+        IssueCategoryModel(name="General Inquiry", complex_id=complex_b.id, created_by=manager2.id),
+    ]
+    categories_complex_c = [
+        IssueCategoryModel(name="Maintenance Request", complex_id=complex_c.id, created_by=manager2.id),
+        IssueCategoryModel(name="General Inquiry", complex_id=complex_c.id, created_by=manager2.id),
+    ]
+    db.add_all(categories_complex_a + categories_complex_b + categories_complex_c)
+    db.commit()
+
+    # Add mock issues for testing
+    from app.core.entities import IssueStatus
+    
+    issues_complex_a = [
+        IssueModel(
+            title="Leaking faucet in kitchen",
+            description="The kitchen faucet has been leaking for 3 days. Need urgent repair.",
+            complex_id=complex_a.id,
+            building_id=building_a1.id,
+            user_id=resident1.id,
+            category_id=categories_complex_a[0].id,  # Maintenance Request
+            status=IssueStatus.OPEN,
+            created_by=resident1.id
+        ),
+        IssueModel(
+            title="Suspicious person at gate",
+            description="Saw an unknown person trying to enter through the side gate around 10 PM.",
+            complex_id=complex_a.id,
+            building_id=building_a2.id,
+            user_id=resident2.id,
+            category_id=categories_complex_a[1].id,  # Security Concern
+            status=IssueStatus.IN_PROGRESS,
+            created_by=resident2.id
+        ),
+        IssueModel(
+            title="Loud music from upstairs",
+            description="Neighbor plays loud music after midnight frequently.",
+            complex_id=complex_a.id,
+            building_id=building_a3.id,
+            user_id=resident3.id,
+            category_id=categories_complex_a[2].id,  # Noise Complaint
+            status=IssueStatus.RESOLVED,
+            created_by=resident3.id
+        ),
+        IssueModel(
+            title="Gym equipment broken",
+            description="The treadmill in the gym is not working properly.",
+            complex_id=complex_a.id,
+            building_id=building_a1.id,
+            user_id=resident1.id,
+            category_id=categories_complex_a[0].id,  # Maintenance Request
+            status=IssueStatus.CLOSED,
+            created_by=resident1.id
+        ),
+    ]
+    
+    issues_complex_b = [
+        IssueModel(
+            title="Parking spot occupied",
+            description="Someone is parking in my assigned spot B-12.",
+            complex_id=complex_b.id,
+            building_id=building_b1.id,
+            user_id=resident4.id,
+            category_id=categories_complex_b[2].id,  # Parking Issue
+            status=IssueStatus.OPEN,
+            created_by=resident4.id
+        ),
+        IssueModel(
+            title="Elevator maintenance needed",
+            description="Elevator in Tower 1 makes strange noises.",
+            complex_id=complex_b.id,
+            building_id=building_b1.id,
+            user_id=resident4.id,
+            category_id=categories_complex_b[0].id,  # Maintenance Request
+            status=IssueStatus.IN_PROGRESS,
+            created_by=resident4.id
+        ),
+    ]
+    
+    db.add_all(issues_complex_a + issues_complex_b)
     db.commit()

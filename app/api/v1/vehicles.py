@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.core.database import get_db
 from app.models.models import UserModel
-from app.api.deps import get_current_user
+from app.core.entities import UserRole
+from app.api.deps import get_current_user, RoleChecker
 from app.services import VehicleService
-from .schemas import VehicleCreate, VehicleOut, VehicleUpdate
+from .schemas import VehicleCreate, VehicleOut, VehicleUpdate, VehicleStats
 
 router = APIRouter()
 
@@ -56,3 +57,24 @@ def delete_vehicle(
     """Delete a vehicle."""
     service = VehicleService(db)
     return service.delete_vehicle(vehicle_id, current_user)
+
+
+@router.get("/stats", response_model=VehicleStats, summary="Vehicle Statistics (Manager)", description="Get vehicle statistics for the manager's complex.")
+def get_vehicle_stats_manager(
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get vehicle statistics for managers."""
+    service = VehicleService(db)
+    return service.get_vehicle_stats_for_manager(current_user)
+
+
+@router.get("/stats/admin", response_model=VehicleStats, summary="Vehicle Statistics (Admin)", description="Get vehicle statistics for a specific complex (admin only).")
+def get_vehicle_stats_admin(
+    complex_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(RoleChecker([UserRole.ADMIN]))
+):
+    """Get vehicle statistics for admins."""
+    service = VehicleService(db)
+    return service.get_vehicle_stats_for_admin(complex_id)

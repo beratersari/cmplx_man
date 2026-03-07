@@ -5,6 +5,8 @@ from .announcement_service import AnnouncementService
 from .vehicle_service import VehicleService
 from .issue_service import IssueService
 from .auth_service import AuthService
+from .visitor_service import VisitorService
+from .issue_category_service import IssueCategoryService
 
 __all__ = [
     "UserService",
@@ -14,4 +16,6 @@ __all__ = [
     "VehicleService",
     "IssueService",
     "AuthService",
+    "VisitorService",
+    "IssueCategoryService",
 ]

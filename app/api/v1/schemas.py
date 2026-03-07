@@ -135,10 +135,14 @@ class UserReaction(BaseModel):
 
 class CommentBase(BaseModel):
     content: str = Field(..., min_length=1)
-    parent_id: Optional[int] = None
 
 class CommentCreate(CommentBase):
+    """Schema for creating a top-level comment on an announcement."""
     pass
+
+class ReplyCreate(CommentBase):
+    """Schema for creating a reply to a comment."""
+    parent_id: int = Field(..., gt=0, description="ID of the comment being replied to")
 
 class CommentOut(BaseModel):
     id: int
@@ -182,6 +186,7 @@ class IssueBase(BaseModel):
     description: str = Field(..., min_length=5)
 
 class IssueCreate(IssueBase):
+    category_id: int = Field(..., gt=0, description="ID of the category for this issue")
     img_paths: List[str] = []
 
 class AdminIssueCreate(IssueCreate):
@@ -191,6 +196,8 @@ class IssueOut(IssueBase):
     id: int
     user_id: int
     complex_id: int
+    building_id: int
+    category_id: int
     status: IssueStatus
     created_date: datetime
     updated_date: Optional[datetime] = None
@@ -204,3 +211,104 @@ class IssueUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=3, max_length=100)
     description: Optional[str] = Field(None, min_length=5)
     status: Optional[IssueStatus] = None
+
+class IssueStatusSummary(BaseModel):
+    open: int
+    in_progress: int
+    resolved: int
+    closed: int
+    total: int
+
+class IssueDailyCount(BaseModel):
+    date: str
+    count: int
+
+class IssueClosedByUser(BaseModel):
+    user_id: int
+    username: str
+    closed_count: int
+
+class IssueCountByBuilding(BaseModel):
+    building_id: int
+    building_name: str
+    issue_count: int
+
+class IssueCountByUser(BaseModel):
+    user_id: int
+    username: str
+    issue_count: int
+
+class VehicleCountByComplex(BaseModel):
+    complex_id: int
+    complex_name: str
+    vehicle_count: int
+
+class VehicleStats(BaseModel):
+    total_vehicles: int
+    vehicles_by_complex: List[VehicleCountByComplex] = []
+
+class VisitorBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    plate_number: Optional[str] = Field(None, min_length=3, max_length=20)
+
+class VisitorCreate(VisitorBase):
+    pass
+
+class VisitorOut(VisitorBase):
+    id: int
+    visit_date: datetime
+    complex_id: int
+    building_id: int
+    user_id: int
+    created_date: datetime
+    created_by: Optional[int]
+
+    class Config:
+        from_attributes = True
+
+class VisitorUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    plate_number: Optional[str] = Field(None, min_length=3, max_length=20)
+    visit_date: Optional[datetime] = None
+
+class VisitorCountByBuilding(BaseModel):
+    building_id: int
+    building_name: str
+    visitor_count: int
+
+class VisitorCountByUser(BaseModel):
+    user_id: int
+    username: str
+    visitor_count: int
+
+class IssueCategoryBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+
+class IssueCategoryCreate(IssueCategoryBase):
+    """Schema for managers to create a category in their complex."""
+    pass
+
+class AdminIssueCategoryCreate(IssueCategoryBase):
+    """Schema for admins to create a category in any complex."""
+    complex_id: int = Field(..., gt=0)
+
+class IssueCategoryOut(BaseModel):
+    id: int
+    name: str
+    complex_id: int
+    created_date: datetime
+    created_by: Optional[int]
+    updated_date: Optional[datetime]
+    updated_by: Optional[int]
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+class IssueCategoryUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+
+class IssueCountByCategory(BaseModel):
+    category_id: int
+    category_name: str
+    issue_count: int

@@ -11,6 +11,7 @@ from .schemas import (
     AnnouncementOut, 
     EmotionCreate, 
     CommentCreate, 
+    ReplyCreate,
     CommentOut,
     UserReaction
 )
@@ -90,16 +91,28 @@ def delete_announcement(
     return service.delete_announcement(announcement_id, current_user)
 
 
-@router.post("/{announcement_id}/comments", response_model=CommentOut, summary="Create Comment", description="Creates a new comment on an announcement. Restricted to Admins or users assigned to the announcement's complex. Comments must be enabled for the announcement.")
+@router.post("/{announcement_id}/comments", response_model=CommentOut, summary="Create Comment", description="Creates a new top-level comment on an announcement. Restricted to Admins or users assigned to the announcement's complex. Comments must be enabled for the announcement.")
 def create_comment(
     announcement_id: int,
     comment_in: CommentCreate,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    """Create a comment on an announcement."""
+    """Create a top-level comment on an announcement."""
     service = AnnouncementService(db)
     return service.create_comment(announcement_id, comment_in, current_user)
+
+
+@router.post("/{announcement_id}/replies", response_model=CommentOut, summary="Create Reply", description="Creates a reply to a comment on an announcement. Restricted to Admins or users assigned to the announcement's complex. Comments must be enabled for the announcement.")
+def create_reply(
+    announcement_id: int,
+    reply_in: ReplyCreate,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Create a reply to a comment on an announcement."""
+    service = AnnouncementService(db)
+    return service.create_reply(announcement_id, reply_in, current_user)
 
 
 @router.post("/comments/{comment_id}/emotions", summary="React to Comment", description="Adds or updates an emoji reaction to a comment.")

@@ -38,6 +38,8 @@ class ResidentialComplexModel(Base, AuditMixin):
     assigned_users = relationship("UserModel", secondary=complex_assignments, back_populates="assigned_complexes")
     announcements = relationship("AnnouncementModel", back_populates="complex")
     issues = relationship("IssueModel", back_populates="complex")
+    visitors = relationship("VisitorModel", back_populates="complex")
+    issue_categories = relationship("IssueCategoryModel", back_populates="complex")
 
 class AnnouncementModel(Base, AuditMixin):
     __tablename__ = "announcements"
@@ -127,6 +129,7 @@ class UserModel(Base, AuditMixin):
     announcement_emotions = relationship("AnnouncementEmotionModel", back_populates="user")
     comment_emotions = relationship("CommentEmotionModel", back_populates="user")
     issues = relationship("IssueModel", back_populates="user")
+    visitors = relationship("VisitorModel", back_populates="user")
 
 class IssueModel(Base, AuditMixin):
     __tablename__ = "issues"
@@ -135,11 +138,14 @@ class IssueModel(Base, AuditMixin):
     title = Column(String, index=True)
     description = Column(String)
     complex_id = Column(Integer, ForeignKey("residential_complexes.id"))
+    building_id = Column(Integer, default=0)
     user_id = Column(Integer, ForeignKey("users.id"))
+    category_id = Column(Integer, ForeignKey("issue_categories.id"), nullable=False)
     status = Column(SQLEnum(IssueStatus), default=IssueStatus.OPEN)
 
     complex = relationship("ResidentialComplexModel", back_populates="issues")
     user = relationship("UserModel", back_populates="issues")
+    issue_category = relationship("IssueCategoryModel", back_populates="issues")
     images = relationship("IssueImageModel", back_populates="issue", cascade="all, delete-orphan")
 
 class IssueImageModel(Base):
@@ -150,3 +156,27 @@ class IssueImageModel(Base):
     img_path = Column(String)
 
     issue = relationship("IssueModel", back_populates="images")
+
+class VisitorModel(Base, AuditMixin):
+    __tablename__ = "visitors"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    plate_number = Column(String, nullable=True)
+    visit_date = Column(DateTime, nullable=False)
+    complex_id = Column(Integer, ForeignKey("residential_complexes.id"))
+    building_id = Column(Integer, default=0)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    complex = relationship("ResidentialComplexModel", back_populates="visitors")
+    user = relationship("UserModel", back_populates="visitors")
+
+class IssueCategoryModel(Base, AuditMixin):
+    __tablename__ = "issue_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    complex_id = Column(Integer, ForeignKey("residential_complexes.id"))
+
+    complex = relationship("ResidentialComplexModel", back_populates="issue_categories")
+    issues = relationship("IssueModel", back_populates="issue_category")

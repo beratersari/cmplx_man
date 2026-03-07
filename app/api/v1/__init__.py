@@ -8,7 +8,8 @@ from .schemas import (
     AnnouncementBase, AnnouncementCreate, AnnouncementOut,
     EmotionCount, UserReaction, EmotionCreate,
     CommentBase, CommentCreate, CommentOut,
-    IssueBase, IssueCreate, IssueOut, IssueUpdate, AdminIssueCreate
+    IssueBase, IssueCreate, IssueOut, IssueUpdate, AdminIssueCreate,
+    VisitorBase, VisitorCreate, VisitorOut
 )
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     "EmotionCount", "UserReaction", "EmotionCreate",
     "CommentBase", "CommentCreate", "CommentOut",
     "IssueBase", "IssueCreate", "IssueOut", "IssueUpdate", "AdminIssueCreate",
+    "VisitorBase", "VisitorCreate", "VisitorOut",
 ]

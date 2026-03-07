@@ -1,4 +1,5 @@
 from typing import List, Optional
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.models import VehicleModel
@@ -54,3 +55,36 @@ class VehicleRepository(BaseRepository[VehicleModel]):
                 exists().where(BuildingModel.complex_id.in_(complex_ids))
             )
         ).offset(skip).limit(limit).all()
+
+    def get_vehicle_counts_by_complex(self, complex_ids: Optional[List[int]] = None) -> List[dict]:
+        """Get vehicle counts grouped by complex."""
+        from app.models.models import BuildingModel, ResidentialComplexModel, UserModel
+
+        query = (
+            self.db.query(
+                ResidentialComplexModel.id,
+                ResidentialComplexModel.name,
+                func.count(VehicleModel.id)
+            )
+            .outerjoin(BuildingModel, BuildingModel.complex_id == ResidentialComplexModel.id)
+            .outerjoin(UserModel, BuildingModel.residents)
+            .outerjoin(VehicleModel, VehicleModel.user_id == UserModel.id)
+        )
+        if complex_ids:
+            query = query.filter(ResidentialComplexModel.id.in_(complex_ids))
+        query = query.group_by(ResidentialComplexModel.id, ResidentialComplexModel.name)
+        return [
+            {"complex_id": complex_id, "complex_name": name, "count": count}
+            for complex_id, name, count in query.all()
+        ]
+
+    def get_total_vehicle_count(self, complex_ids: Optional[List[int]] = None) -> int:
+        """Get total vehicle count (optionally filtered by complex)."""
+        from app.models.models import BuildingModel, UserModel
+
+        query = self.db.query(func.count(VehicleModel.id))
+        if complex_ids:
+            query = query.join(UserModel, VehicleModel.user_id == UserModel.id)
+            query = query.join(BuildingModel, UserModel.assigned_buildings)
+            query = query.filter(BuildingModel.complex_id.in_(complex_ids))
+        return query.scalar() or 0

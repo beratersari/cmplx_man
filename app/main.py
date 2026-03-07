@@ -4,7 +4,7 @@ from app.models.models import UserModel
 from app.core.security import get_password_hash
 from app.core.entities import UserRole
 from app.core.mock_data import seed_mock_data
-from app.api.v1 import auth, users, complexes, buildings, announcements, vehicles, issues
+from app.api.v1 import auth, users, complexes, buildings, announcements, vehicles, issues, visitors, categories
 from app.core.logging_config import logger
 import time
 
@@ -36,6 +36,8 @@ app.include_router(buildings.router, prefix="/api/v1/buildings", tags=["Building
 app.include_router(announcements.router, prefix="/api/v1/announcements", tags=["Announcements"])
 app.include_router(vehicles.router, prefix="/api/v1/vehicles", tags=["Vehicles"])
 app.include_router(issues.router, prefix="/api/v1/issues", tags=["Issues/Requests"])
+app.include_router(visitors.router, prefix="/api/v1/visitors", tags=["Visitors"])
+app.include_router(categories.router, prefix="/api/v1/issue-categories", tags=["Issue Categories"])
 
 
 @app.on_event("startup")

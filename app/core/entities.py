@@ -71,3 +71,11 @@ class Vehicle(AuditBase):
     make: Optional[str] = None
     model: Optional[str] = None
     color: Optional[str] = None
+
+class Visitor(AuditBase):
+    id: Optional[int] = None
+    name: str
+    plate_number: Optional[str] = None
+    visit_date: datetime
+    complex_id: int
+    user_id: int

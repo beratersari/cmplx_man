@@ -5,6 +5,8 @@ from .building_repository import BuildingRepository
 from .announcement_repository import AnnouncementRepository
 from .vehicle_repository import VehicleRepository
 from .issue_repository import IssueRepository
+from .visitor_repository import VisitorRepository
+from .issue_category_repository import IssueCategoryRepository
 
 __all__ = [
     "BaseRepository",
@@ -14,4 +16,6 @@ __all__ = [
     "AnnouncementRepository",
     "VehicleRepository",
     "IssueRepository",
+    "VisitorRepository",
+    "IssueCategoryRepository",
 ]
