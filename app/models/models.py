@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum as SQLEnum, Table
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from .database import Base
-from app.domain.entities import UserRole, IssueStatus
+from app.core.database import Base
+from app.core.entities import UserRole, IssueStatus
 
 class AuditMixin:
     created_date = Column(DateTime, default=datetime.utcnow)

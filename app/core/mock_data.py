@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from app.infrastructure.models import ResidentialComplexModel, BuildingModel, UserModel, AnnouncementModel, AnnouncementEmotionModel, CommentModel, CommentEmotionModel, VehicleModel
-from app.infrastructure.security import get_password_hash
-from app.domain.entities import UserRole
+from app.models.models import ResidentialComplexModel, BuildingModel, UserModel, AnnouncementModel, AnnouncementEmotionModel, CommentModel, CommentEmotionModel, VehicleModel
+from app.core.security import get_password_hash
+from app.core.entities import UserRole
 
 def seed_mock_data(db: Session):
     # Skip if data already exists

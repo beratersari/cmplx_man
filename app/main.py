@@ -1,12 +1,11 @@
 from fastapi import FastAPI, Request
-from app.infrastructure.database import engine, Base
-from app.infrastructure.models import UserModel
-from app.infrastructure.security import get_password_hash
-from app.domain.entities import UserRole
-from app.infrastructure.database import SessionLocal
-from app.infrastructure.mock_data import seed_mock_data
-from app.interfaces.api.v1 import auth, users, complexes, buildings, announcements, vehicles, issues
-from app.infrastructure.logging_config import logger
+from app.core.database import engine, Base, SessionLocal
+from app.models.models import UserModel
+from app.core.security import get_password_hash
+from app.core.entities import UserRole
+from app.core.mock_data import seed_mock_data
+from app.api.v1 import auth, users, complexes, buildings, announcements, vehicles, issues
+from app.core.logging_config import logger
 import time
 
 # Create tables
@@ -18,6 +17,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.time()
@@ -26,6 +26,7 @@ async def log_requests(request: Request, call_next):
     formatted_process_time = "{0:.2f}ms".format(process_time)
     logger.info(f"RID: {request.scope.get('root_path')} - {request.method} {request.url.path} - Status: {response.status_code} - Completed in {formatted_process_time}")
     return response
+
 
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
@@ -36,9 +37,10 @@ app.include_router(announcements.router, prefix="/api/v1/announcements", tags=["
 app.include_router(vehicles.router, prefix="/api/v1/vehicles", tags=["Vehicles"])
 app.include_router(issues.router, prefix="/api/v1/issues", tags=["Issues/Requests"])
 
+
 @app.on_event("startup")
 def startup_event():
-    # Create initial admin user if not exists
+    """Initialize database with admin user and mock data."""
     db = SessionLocal()
     try:
         admin_user = db.query(UserModel).filter(UserModel.username == "admin").first()
@@ -56,6 +58,8 @@ def startup_event():
     finally:
         db.close()
 
+
 @app.get("/")
 def read_root():
+    """Root endpoint returning welcome message."""
     return {"message": "Welcome to Apartment Management API. Visit /docs for Swagger documentation."}

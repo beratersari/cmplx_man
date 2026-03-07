@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
-from app.domain.entities import UserRole, IssueStatus
+from app.core.entities import UserRole, IssueStatus
 
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")
@@ -21,6 +21,8 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     contact: Optional[str] = None
     description: Optional[str] = None
+    complex_ids: Optional[List[int]] = None
+    building_ids: Optional[List[int]] = None
 
 class UserOut(UserBase):
     id: int
@@ -33,6 +35,12 @@ class UserOut(UserBase):
         from_attributes = True
 
 class ComplexAssignment(BaseModel):
+    """Schema for managers to assign users to their complex."""
+    user_id: int = Field(..., gt=0)
+
+
+class AdminComplexAssignment(BaseModel):
+    """Schema for admins to assign users to any complex."""
     user_id: int = Field(..., gt=0)
     complex_id: int = Field(..., gt=0)
 
@@ -55,13 +63,21 @@ class ResidentialComplexOut(ResidentialComplexBase):
 
 class BuildingBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
-    complex_id: int = Field(..., gt=0)
+
 
 class BuildingCreate(BuildingBase):
+    """Schema for managers to create a building in their complex."""
     pass
 
-class BuildingOut(BuildingBase):
+
+class AdminBuildingCreate(BuildingBase):
+    """Schema for admins to create a building in any complex."""
+    complex_id: int = Field(..., gt=0)
+
+class BuildingOut(BaseModel):
     id: int
+    name: str
+    complex_id: int
     created_date: datetime
     created_by: Optional[int]
     updated_date: Optional[datetime]
