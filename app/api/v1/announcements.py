@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.core.database import get_db
 from app.models.models import UserModel
@@ -42,6 +42,20 @@ def read_announcements(
     """List announcements."""
     service = AnnouncementService(db)
     return service.list_announcements(current_user, complex_id, skip, limit)
+
+
+@router.get("/search", response_model=List[AnnouncementOut], summary="Search Announcements", description="Search announcements by title or description. Admins can search all announcements. Other users can only search within their assigned complexes.")
+def search_announcements(
+    query: str = Query(..., min_length=1, description="Search query for title or description"),
+    complex_id: Optional[int] = Query(None, description="Filter by complex ID (optional for admins)"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Search announcements by title or description."""
+    service = AnnouncementService(db)
+    return service.search_announcements(current_user, query, complex_id, skip, limit)
 
 
 @router.get("/{announcement_id}", response_model=AnnouncementOut, summary="Get Announcement", description="Get a specific announcement by ID. Marks the announcement as read for the current user.")

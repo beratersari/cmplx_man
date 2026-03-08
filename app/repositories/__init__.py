@@ -10,6 +10,9 @@ from .visitor_repository import VisitorRepository
 from .issue_category_repository import IssueCategoryRepository
 from .reservation_category_repository import ReservationCategoryRepository
 from .reservation_repository import ReservationRepository
+from .marketplace_category_repository import MarketplaceCategoryRepository
+from .marketplace_item_repository import MarketplaceItemRepository
+from .payment_repository import PaymentRepository, PaymentRecordRepository
 
 __all__ = [
     "BaseRepository",
@@ -24,4 +27,8 @@ __all__ = [
     "IssueCategoryRepository",
     "ReservationCategoryRepository",
     "ReservationRepository",
+    "MarketplaceCategoryRepository",
+    "MarketplaceItemRepository",
+    "PaymentRepository",
+    "PaymentRecordRepository",
 ]

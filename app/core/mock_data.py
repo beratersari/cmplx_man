@@ -1,19 +1,24 @@
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.models.models import UserModel
-from app.core.entities import UserRole, ReservationStatus
+from app.core.entities import UserRole, ReservationStatus, VisitorStatus
 from app.services import (
     ComplexService, BuildingService, UserService, 
     AnnouncementService, VehicleService, VisitorService,
     IssueCategoryService, IssueService,
-    ReservationCategoryService, ReservationService
+    ReservationCategoryService, ReservationService,
+    MarketplaceCategoryService, MarketplaceItemService,
+    PaymentService
 )
 from app.api.v1.schemas import (
     ResidentialComplexCreate, AdminBuildingCreate,
-    UserCreate, AnnouncementCreate, VehicleCreate, VisitorCreate,
+    UserCreate, UserUpdate, AnnouncementCreate, VehicleCreate, VisitorCreate,
     IssueCategoryCreate, IssueCreate,
     ReservationCategoryCreate, AdminReservationCategoryCreate, ReservationCreate, ReservationStatusUpdate,
-    AdminComplexAssignment, BuildingAssignment
+    AdminComplexAssignment, BuildingAssignment,
+    MarketplaceCategoryCreate, MarketplaceItemCreate,
+    VisitorStatusUpdate,
+    PaymentCreateForAll, PaymentCreateForSpecific, AdminPaymentCreateForAll, AdminPaymentCreateForSpecific
 )
 
 def seed_mock_data(db: Session):
@@ -37,6 +42,9 @@ def seed_mock_data(db: Session):
     issue_service = IssueService(db)
     reservation_category_service = ReservationCategoryService(db)
     reservation_service = ReservationService(db)
+    marketplace_category_service = MarketplaceCategoryService(db)
+    marketplace_item_service = MarketplaceItemService(db)
+    payment_service = PaymentService(db)
 
     # 1. Create Complexes (Admin creates complexes)
     complex_a = complex_service.create_complex(
@@ -95,24 +103,46 @@ def seed_mock_data(db: Session):
         UserCreate(username="attendant2", email="attendant2@example.com", password="attendant123", role=UserRole.SITE_ATTENDANT),
         admin_user
     )
+    # Residents with searchable names for testing
     resident1 = user_service.create_user(
-        UserCreate(username="resident1", email="resident1@example.com", password="resident123", role=UserRole.SITE_RESIDENT),
+        UserCreate(username="john_smith", email="john.smith@email.com", password="resident123", role=UserRole.SITE_RESIDENT),
         admin_user
     )
     resident2 = user_service.create_user(
-        UserCreate(username="resident2", email="resident2@example.com", password="resident123", role=UserRole.SITE_RESIDENT),
+        UserCreate(username="jane_doe", email="jane.doe@email.com", password="resident123", role=UserRole.SITE_RESIDENT),
         admin_user
     )
     resident3 = user_service.create_user(
-        UserCreate(username="resident3", email="resident3@example.com", password="resident123", role=UserRole.SITE_RESIDENT),
+        UserCreate(username="mike_wilson", email="mike.wilson@email.com", password="resident123", role=UserRole.SITE_RESIDENT),
         admin_user
     )
     resident4 = user_service.create_user(
-        UserCreate(username="resident4", email="resident4@example.com", password="resident123", role=UserRole.SITE_RESIDENT),
+        UserCreate(username="sarah_jones", email="sarah.jones@email.com", password="resident123", role=UserRole.SITE_RESIDENT),
         admin_user
     )
     resident5 = user_service.create_user(
-        UserCreate(username="resident5", email="resident5@example.com", password="resident123", role=UserRole.SITE_RESIDENT),
+        UserCreate(username="david_brown", email="david.brown@email.com", password="resident123", role=UserRole.SITE_RESIDENT),
+        admin_user
+    )
+    # Additional residents for better search testing
+    resident6 = user_service.create_user(
+        UserCreate(username="emily_davis", email="emily.davis@email.com", password="resident123", role=UserRole.SITE_RESIDENT),
+        admin_user
+    )
+    resident7 = user_service.create_user(
+        UserCreate(username="robert_miller", email="robert.miller@email.com", password="resident123", role=UserRole.SITE_RESIDENT),
+        admin_user
+    )
+    resident8 = user_service.create_user(
+        UserCreate(username="lisa_anderson", email="lisa.anderson@email.com", password="resident123", role=UserRole.SITE_RESIDENT),
+        admin_user
+    )
+    resident9 = user_service.create_user(
+        UserCreate(username="chris_taylor", email="chris.taylor@email.com", password="resident123", role=UserRole.SITE_RESIDENT),
+        admin_user
+    )
+    resident10 = user_service.create_user(
+        UserCreate(username="amanda_white", email="amanda.white@email.com", password="resident123", role=UserRole.SITE_RESIDENT),
         admin_user
     )
 
@@ -131,6 +161,12 @@ def seed_mock_data(db: Session):
     complex_service.admin_assign_user_to_complex(AdminComplexAssignment(user_id=resident3.id, complex_id=complex_a.id), admin_user)
     complex_service.admin_assign_user_to_complex(AdminComplexAssignment(user_id=resident4.id, complex_id=complex_b.id), admin_user)
     complex_service.admin_assign_user_to_complex(AdminComplexAssignment(user_id=resident5.id, complex_id=complex_c.id), admin_user)
+    # Additional residents for search testing
+    complex_service.admin_assign_user_to_complex(AdminComplexAssignment(user_id=resident6.id, complex_id=complex_a.id), admin_user)
+    complex_service.admin_assign_user_to_complex(AdminComplexAssignment(user_id=resident7.id, complex_id=complex_b.id), admin_user)
+    complex_service.admin_assign_user_to_complex(AdminComplexAssignment(user_id=resident8.id, complex_id=complex_a.id), admin_user)
+    complex_service.admin_assign_user_to_complex(AdminComplexAssignment(user_id=resident9.id, complex_id=complex_b.id), admin_user)
+    complex_service.admin_assign_user_to_complex(AdminComplexAssignment(user_id=resident10.id, complex_id=complex_c.id), admin_user)
 
     # 5. Assign Residents to Buildings (Admin assigns residents to buildings)
     building_service.assign_resident(BuildingAssignment(user_id=resident1.id, building_id=building_a1.id), admin_user)
@@ -138,6 +174,25 @@ def seed_mock_data(db: Session):
     building_service.assign_resident(BuildingAssignment(user_id=resident3.id, building_id=building_a3.id), admin_user)
     building_service.assign_resident(BuildingAssignment(user_id=resident4.id, building_id=building_b1.id), admin_user)
     building_service.assign_resident(BuildingAssignment(user_id=resident5.id, building_id=building_c1.id), admin_user)
+    # Additional residents for search testing
+    building_service.assign_resident(BuildingAssignment(user_id=resident6.id, building_id=building_a1.id), admin_user)
+    building_service.assign_resident(BuildingAssignment(user_id=resident7.id, building_id=building_b2.id), admin_user)
+    building_service.assign_resident(BuildingAssignment(user_id=resident8.id, building_id=building_a2.id), admin_user)
+    building_service.assign_resident(BuildingAssignment(user_id=resident9.id, building_id=building_b1.id), admin_user)
+    building_service.assign_resident(BuildingAssignment(user_id=resident10.id, building_id=building_c1.id), admin_user)
+
+    # 5.5. Assign Unit Numbers to Residents (via update, same pattern as complex_ids/building_ids)
+    user_service.update_user(resident1.id, UserUpdate(unit_number="101"), admin_user)
+    user_service.update_user(resident2.id, UserUpdate(unit_number="102"), admin_user)
+    user_service.update_user(resident3.id, UserUpdate(unit_number="201"), admin_user)
+    user_service.update_user(resident4.id, UserUpdate(unit_number="A-15"), admin_user)
+    user_service.update_user(resident5.id, UserUpdate(unit_number="B-04"), admin_user)
+    # Additional residents for search testing
+    user_service.update_user(resident6.id, UserUpdate(unit_number="103"), admin_user)
+    user_service.update_user(resident7.id, UserUpdate(unit_number="B-22"), admin_user)
+    user_service.update_user(resident8.id, UserUpdate(unit_number="202"), admin_user)
+    user_service.update_user(resident9.id, UserUpdate(unit_number="A-18"), admin_user)
+    user_service.update_user(resident10.id, UserUpdate(unit_number="C-01"), admin_user)
 
     # 6. Create Announcements (Manager creates announcements in their complex)
     announcement1 = announcement_service.create_announcement(
@@ -148,10 +203,30 @@ def seed_mock_data(db: Session):
         AnnouncementCreate(title="Pool Maintenance Notice", description="The pool will be closed for cleaning on Saturday.", complex_id=complex_a.id),
         manager1
     )
-    # Admin creates announcement for complex_b and complex_c (since manager2 only manages complex_b)
     announcement3 = announcement_service.create_announcement(
         AnnouncementCreate(title="Parking Reminder", description="Please park only in designated spaces.", complex_id=complex_b.id),
         manager2
+    )
+    # Additional announcements for search testing
+    announcement4 = announcement_service.create_announcement(
+        AnnouncementCreate(title="Community Event: Summer BBQ", description="Join us for our annual summer BBQ at the community garden. Food and drinks provided!", complex_id=complex_a.id),
+        manager1
+    )
+    announcement5 = announcement_service.create_announcement(
+        AnnouncementCreate(title="Gym Renovation Update", description="The gym renovation is complete! New equipment has been installed.", complex_id=complex_a.id),
+        manager1
+    )
+    announcement6 = announcement_service.create_announcement(
+        AnnouncementCreate(title="Holiday Office Hours", description="The management office will be closed on holidays. Emergency contacts are available.", complex_id=complex_b.id),
+        manager2
+    )
+    announcement7 = announcement_service.create_announcement(
+        AnnouncementCreate(title="Package Delivery Notice", description="Please pick up your packages from the concierge within 48 hours.", complex_id=complex_b.id),
+        manager2
+    )
+    announcement8 = announcement_service.create_announcement(
+        AnnouncementCreate(title="Fire Safety Drill", description="Annual fire safety drill scheduled for next week. Participation is mandatory.", complex_id=complex_a.id),
+        manager1
     )
 
     # 7. Create Vehicles (Residents create vehicles for themselves)
@@ -177,21 +252,38 @@ def seed_mock_data(db: Session):
     yesterday = today - timedelta(days=1)
     tomorrow = today + timedelta(days=1)
     
-    visitor_service.create_visitor(
+    visitor1 = visitor_service.create_visitor(
         VisitorCreate(name="John Doe", plate_number="VIS-1001", visit_date=today),
         resident1
     )
-    visitor_service.create_visitor(
+    visitor2 = visitor_service.create_visitor(
         VisitorCreate(name="Maria Lopez", plate_number=None, visit_date=today),
         resident2
     )
-    visitor_service.create_visitor(
+    visitor3 = visitor_service.create_visitor(
         VisitorCreate(name="Alex Kim", plate_number="VIS-2002", visit_date=yesterday),
         resident3
     )
-    visitor_service.create_visitor(
+    visitor4 = visitor_service.create_visitor(
         VisitorCreate(name="Sara Patel", plate_number="VIS-3003", visit_date=today),
         resident4
+    )
+    
+    # Staff updates visitor status
+    visitor_service.update_visitor_status(
+        visitor1.id,
+        VisitorStatusUpdate(status=VisitorStatus.CHECKED_IN),
+        attendant1
+    )
+    visitor_service.update_visitor_status(
+        visitor3.id,
+        VisitorStatusUpdate(status=VisitorStatus.CHECKED_OUT),
+        attendant1
+    )
+    visitor_service.update_visitor_status(
+        visitor4.id,
+        VisitorStatusUpdate(status=VisitorStatus.NO_SHOW),
+        attendant2
     )
 
     # 9. Create Issue Categories (Managers create categories in their complex)
@@ -366,5 +458,94 @@ def seed_mock_data(db: Session):
     announcement_service.get_announcement_by_id(announcement1.id, resident2)
     announcement_service.get_announcement_by_id(announcement2.id, resident1)
     announcement_service.get_announcement_by_id(announcement3.id, resident4)
+
+    # 14. Create Marketplace Categories
+    m_cat_electronics = marketplace_category_service.create_category_in_my_complex(
+        MarketplaceCategoryCreate(name="Electronics"),
+        manager1
+    )
+    m_cat_furniture = marketplace_category_service.create_category_in_my_complex(
+        MarketplaceCategoryCreate(name="Furniture"),
+        manager1
+    )
+    m_cat_books = marketplace_category_service.create_category_in_my_complex(
+        MarketplaceCategoryCreate(name="Books"),
+        manager2
+    )
+
+    # 15. Create Marketplace Items
+    marketplace_item_service.create_item(
+        MarketplaceItemCreate(
+            category_id=m_cat_electronics.id,
+            title="Used iPhone 12",
+            description="Good condition, 64GB, space gray.",
+            price=450.0,
+            img_paths=["/imgs/iphone12_1.jpg", "/imgs/iphone12_2.jpg"]
+        ),
+        resident1
+    )
+    marketplace_item_service.create_item(
+        MarketplaceItemCreate(
+            category_id=m_cat_furniture.id,
+            title="Office Chair",
+            description="Ergonomic chair, barely used.",
+            price=75.0,
+            img_paths=["/imgs/chair.jpg"]
+        ),
+        resident2
+    )
+    marketplace_item_service.create_item(
+        MarketplaceItemCreate(
+            category_id=m_cat_books.id,
+            title="Python Programming",
+            description="Great book for beginners.",
+            price=20.0,
+            img_paths=[]
+        ),
+        resident4
+    )
+    
+    # 16. Create Payments (Managers create payments for their complexes)
+    # Manager1 creates a monthly maintenance fee for ALL units in complex_a
+    payment1 = payment_service.create_payment_for_all(
+        PaymentCreateForAll(
+            title="Monthly Maintenance Fee - March",
+            amount=150.00,
+            due_date=today + timedelta(days=15)
+        ),
+        manager1
+    )
+    
+    # Manager1 creates a special assessment for specific units
+    payment2 = payment_service.create_payment_for_specific(
+        PaymentCreateForSpecific(
+            title="Elevator Repair Assessment",
+            amount=75.00,
+            unit_numbers=["101", "102"],
+            due_date=today + timedelta(days=30)
+        ),
+        manager1
+    )
+    
+    # Manager2 creates a parking fee for all units in complex_b
+    payment3 = payment_service.create_payment_for_all(
+        PaymentCreateForAll(
+            title="Monthly Parking Fee - March",
+            amount=50.00,
+            due_date=today + timedelta(days=10)
+        ),
+        manager2
+    )
+    
+    # Admin creates a payment for complex_c (no manager assigned)
+    payment4 = payment_service.admin_create_payment_for_all(
+        AdminPaymentCreateForAll(
+            title="Annual Maintenance Fee",
+            amount=200.00,
+            complex_id=complex_c.id,
+            due_date=today + timedelta(days=60)
+        ),
+        admin_user
+    )
     
     print("Mock data seeding completed successfully!")

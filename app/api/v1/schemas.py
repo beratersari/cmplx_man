@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
-from app.core.entities import UserRole, IssueStatus
+from app.core.entities import UserRole, IssueStatus, MarketplaceItemStatus, VisitorStatus, PaymentStatus, PaymentTargetType
 
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")
@@ -21,11 +21,19 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     contact: Optional[str] = None
     description: Optional[str] = None
+    unit_number: Optional[str] = None
     complex_ids: Optional[List[int]] = None
     building_ids: Optional[List[int]] = None
 
-class UserOut(UserBase):
+class UserOut(BaseModel):
     id: int
+    username: str
+    email: EmailStr
+    role: UserRole
+    is_active: bool
+    contact: Optional[str] = None
+    description: Optional[str] = None
+    unit_number: Optional[str] = None
     created_date: datetime
     created_by: Optional[int]
     updated_date: Optional[datetime]
@@ -281,6 +289,9 @@ class VisitorOut(VisitorBase):
     complex_id: int
     building_id: int
     user_id: int
+    status: VisitorStatus
+    status_updated_by: Optional[int]
+    status_updated_date: Optional[datetime]
     created_date: datetime
     created_by: Optional[int]
 
@@ -291,6 +302,9 @@ class VisitorUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     plate_number: Optional[str] = Field(None, min_length=3, max_length=20)
     visit_date: Optional[datetime] = None
+
+class VisitorStatusUpdate(BaseModel):
+    status: VisitorStatus
 
 class VisitorCountByBuilding(BaseModel):
     building_id: int
@@ -422,3 +436,202 @@ class ReservationOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Marketplace Category Schemas
+class MarketplaceCategoryBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+
+
+class MarketplaceCategoryCreate(MarketplaceCategoryBase):
+    """Schema for managers to create a marketplace category in their complex."""
+    pass
+
+
+class AdminMarketplaceCategoryCreate(MarketplaceCategoryBase):
+    """Schema for admins to create a marketplace category in any complex."""
+    complex_id: int = Field(..., gt=0)
+
+
+class MarketplaceCategoryOut(BaseModel):
+    id: int
+    name: str
+    complex_id: int
+    created_date: datetime
+    created_by: Optional[int]
+    updated_date: Optional[datetime]
+    updated_by: Optional[int]
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
+class MarketplaceCategoryUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+
+
+# Marketplace Item Schemas
+class MarketplaceItemImageOut(BaseModel):
+    id: int
+    img_path: str
+
+    class Config:
+        from_attributes = True
+
+
+class MarketplaceItemBase(BaseModel):
+    category_id: int = Field(..., gt=0)
+    title: str = Field(..., min_length=3, max_length=100)
+    description: str = Field(..., min_length=5, max_length=1000)
+    price: float = Field(..., gt=0)
+    img_paths: List[str] = []
+
+
+class MarketplaceItemCreate(MarketplaceItemBase):
+    """Schema for creating a marketplace item."""
+    pass
+
+
+class MarketplaceItemUpdate(BaseModel):
+    category_id: Optional[int] = Field(None, gt=0)
+    title: Optional[str] = Field(None, min_length=3, max_length=100)
+    description: Optional[str] = Field(None, min_length=5, max_length=1000)
+    price: Optional[float] = Field(None, gt=0)
+    status: Optional[MarketplaceItemStatus] = None
+    img_paths: Optional[List[str]] = None
+    relist: bool = False  # Set to True to relist an expired item
+
+
+class MarketplaceItemOut(BaseModel):
+    id: int
+    category_id: int
+    user_id: int
+    username: str
+    contact: str
+    title: str
+    description: str
+    price: float
+    complex_id: int
+    status: MarketplaceItemStatus
+    listed_date: datetime
+    images: List[MarketplaceItemImageOut] = []
+    created_date: datetime
+    created_by: Optional[int]
+    updated_date: Optional[datetime]
+    updated_by: Optional[int]
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
+# Payment Schemas
+class PaymentBase(BaseModel):
+    title: str = Field(..., min_length=3, max_length=100)
+    amount: float = Field(..., gt=0)
+    due_date: Optional[datetime] = None
+
+
+class PaymentCreateForAll(PaymentBase):
+    """Schema for creating a payment for ALL units in the manager's complex."""
+    pass
+
+
+class PaymentCreateForSpecific(PaymentBase):
+    """Schema for creating a payment for specific unit numbers."""
+    unit_numbers: List[str] = Field(..., min_items=1)
+
+
+class AdminPaymentCreateForAll(PaymentBase):
+    """Schema for admin to create a payment for ALL units in any complex."""
+    complex_id: int = Field(..., gt=0)
+
+
+class AdminPaymentCreateForSpecific(PaymentBase):
+    """Schema for admin to create a payment for specific unit numbers in any complex."""
+    complex_id: int = Field(..., gt=0)
+    unit_numbers: List[str] = Field(..., min_items=1)
+
+
+class PaymentUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=3, max_length=100)
+    amount: Optional[float] = Field(None, gt=0)
+    due_date: Optional[datetime] = None
+
+
+class PaymentRecordOut(BaseModel):
+    id: int
+    payment_id: int
+    unit_number: str
+    status: PaymentStatus
+    paid_date: Optional[datetime]
+    created_date: datetime
+    updated_date: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+class PaymentOut(BaseModel):
+    id: int
+    title: str
+    amount: float
+    complex_id: int
+    target_type: PaymentTargetType
+    unit_numbers: List[str] = []
+    due_date: Optional[datetime]
+    records: List[PaymentRecordOut] = []
+    created_date: datetime
+    created_by: Optional[int]
+    updated_date: Optional[datetime]
+    updated_by: Optional[int]
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
+class PaymentRecordStatusUpdate(BaseModel):
+    status: PaymentStatus
+
+
+class PaymentStats(BaseModel):
+    total_records: int
+    pending_count: int
+    paid_count: int
+    overdue_count: int
+    cancelled_count: int
+    total_amount: float
+    collected_amount: float
+    pending_amount: float
+
+
+class PaymentStatsByBuilding(BaseModel):
+    building_id: int
+    building_name: str
+    total_records: int
+    pending_count: int
+    paid_count: int
+    overdue_count: int
+    cancelled_count: int
+    total_amount: float
+    collected_amount: float
+    pending_amount: float
+
+
+class PaymentRecordInBuilding(BaseModel):
+    id: int
+    payment_id: int
+    payment_title: str
+    unit_number: str
+    amount: float
+    status: PaymentStatus
+    due_date: Optional[datetime]
+    paid_date: Optional[datetime]
+
+
+class PaymentsByBuilding(BaseModel):
+    building_id: int
+    building_name: str
+    records: List[PaymentRecordInBuilding]

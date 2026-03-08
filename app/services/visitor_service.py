@@ -5,8 +5,8 @@ from fastapi import HTTPException
 
 from app.repositories import VisitorRepository, UserRepository, ComplexRepository
 from app.models.models import VisitorModel, UserModel
-from app.core.entities import UserRole
-from app.api.v1.schemas import VisitorCreate, VisitorUpdate, VisitorCountByBuilding, VisitorCountByUser
+from app.core.entities import UserRole, VisitorStatus
+from app.api.v1.schemas import VisitorCreate, VisitorUpdate, VisitorCountByBuilding, VisitorCountByUser, VisitorStatusUpdate
 from app.core.logging_config import logger
 
 
@@ -30,6 +30,7 @@ class VisitorService:
             "complex_id": complex_id,
             "building_id": building_id,
             "user_id": current_user.id,
+            "status": VisitorStatus.PENDING,
         }
         visitor = self.visitor_repo.create(visit_data, created_by=current_user.id)
         logger.info(f"Visitor registered: {visitor.name} for complex {complex_id}")
@@ -53,6 +54,32 @@ class VisitorService:
         
         visitor = self.visitor_repo.update(visitor, update_data, updated_by=current_user.id)
         logger.info(f"Visitor updated: {visitor.name} (ID: {visitor.id})")
+        return visitor
+
+    def update_visitor_status(self, visitor_id: int, status_in: VisitorStatusUpdate, current_user: UserModel) -> VisitorModel:
+        """Update visitor status (staff only: admin, manager, or attendant)."""
+        visitor = self.visitor_repo.get_by_id(visitor_id)
+        if not visitor:
+            raise HTTPException(status_code=404, detail="Visitor not found")
+        
+        # Only staff can update status
+        if current_user.role not in [UserRole.ADMIN, UserRole.SITE_MANAGER, UserRole.SITE_ATTENDANT]:
+            raise HTTPException(status_code=403, detail="Only staff can update visitor status")
+        
+        # For non-admin, must be in same complex
+        if current_user.role != UserRole.ADMIN:
+            user_complex_ids = [c.id for c in current_user.assigned_complexes]
+            if visitor.complex_id not in user_complex_ids:
+                raise HTTPException(status_code=403, detail="Not enough permissions for this complex")
+        
+        update_data = {
+            "status": status_in.status,
+            "status_updated_by": current_user.id,
+            "status_updated_date": datetime.utcnow(),
+        }
+        
+        visitor = self.visitor_repo.update(visitor, update_data, updated_by=current_user.id)
+        logger.info(f"Visitor status updated: {visitor.name} (ID: {visitor.id}) -> {status_in.status}")
         return visitor
 
     def delete_visitor(self, visitor_id: int, current_user: UserModel) -> dict:

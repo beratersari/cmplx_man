@@ -8,7 +8,7 @@ from app.models.models import UserModel
 from app.services import VisitorService
 from app.api.deps import get_current_user, RoleChecker
 from app.core.entities import UserRole
-from app.api.v1.schemas import VisitorCreate, VisitorUpdate, VisitorOut, VisitorCountByBuilding, VisitorCountByUser
+from app.api.v1.schemas import VisitorCreate, VisitorUpdate, VisitorOut, VisitorCountByBuilding, VisitorCountByUser, VisitorStatusUpdate
 
 router = APIRouter()
 
@@ -57,6 +57,18 @@ def update_visitor(
     """Update a visitor."""
     service = VisitorService(db)
     return service.update_visitor(visitor_id, visitor_in, current_user)
+
+
+@router.put("/{visitor_id}/status", response_model=VisitorOut, summary="Update Visitor Status", description="Update visitor entry status (staff only: admin, manager, or attendant).")
+def update_visitor_status(
+    visitor_id: int,
+    status_in: VisitorStatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    """Update visitor status (staff only)."""
+    service = VisitorService(db)
+    return service.update_visitor_status(visitor_id, status_in, current_user)
 
 
 @router.delete("/{visitor_id}", summary="Delete Visitor", description="Delete a visitor (creator, admin, or manager of same complex).")

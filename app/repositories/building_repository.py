@@ -33,6 +33,15 @@ class BuildingRepository(BaseRepository[BuildingModel]):
         limit: int = 50
     ) -> List[BuildingModel]:
         """Get all buildings in a complex."""
+        return self.get_by_complex(complex_id, skip, limit)
+    
+    def get_by_complex(
+        self, 
+        complex_id: int, 
+        skip: int = 0, 
+        limit: int = 50
+    ) -> List[BuildingModel]:
+        """Get all buildings in a complex."""
         return self.db.query(BuildingModel).filter(
             BuildingModel.complex_id == complex_id
         ).offset(skip).limit(limit).all()

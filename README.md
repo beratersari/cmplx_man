@@ -106,7 +106,10 @@ app/
 │   ├── visitor_repository.py   # Visitor data access
 │   ├── issue_category_repository.py  # Issue Category data access
 │   ├── reservation_category_repository.py  # Reservation Category data access
-│   └── reservation_repository.py      # Reservation data access
+│   ├── reservation_repository.py      # Reservation data access
+│   ├── marketplace_category_repository.py  # Marketplace Category data access
+│   ├── marketplace_item_repository.py      # Marketplace Item data access
+│   └── payment_repository.py   # Payment data access
 │
 ├── services/                   # Business logic layer
 │   ├── __init__.py
@@ -120,7 +123,10 @@ app/
 │   ├── visitor_service.py      # Visitor business logic
 │   ├── issue_category_service.py     # Issue Category business logic
 │   ├── reservation_category_service.py # Reservation Category business logic
-│   └── reservation_service.py        # Reservation business logic
+│   ├── reservation_service.py        # Reservation business logic
+│   ├── marketplace_category_service.py  # Marketplace Category business logic
+│   ├── marketplace_item_service.py      # Marketplace Item business logic
+│   └── payment_service.py      # Payment business logic
 │
 ├── api/                        # Presentation layer
 │   ├── __init__.py
@@ -138,7 +144,10 @@ app/
 │       ├── visitors.py         # Visitor endpoints
 │       ├── categories.py       # Issue Category endpoints
 │       ├── reservation_categories.py  # Reservation Category endpoints
-│       └── reservations.py     # Reservation endpoints
+│       ├── reservations.py     # Reservation endpoints
+│       ├── marketplace_categories.py  # Marketplace Category endpoints
+│       ├── marketplace_items.py      # Marketplace Item endpoints
+│       └── payments.py         # Payment endpoints
 │
 └── main.py                     # Application entry point
 ```
@@ -199,6 +208,7 @@ All collection GET endpoints support pagination via `skip` and `limit` query par
 | POST | `/api/v1/users/` | Create a new user (Admins can create any role; Managers can create any role except ADMIN, and created users are auto-assigned to the manager’s complexes). |
 | GET | `/api/v1/users/me` | Get current user profile. |
 | GET | `/api/v1/users/` | List users (Admins see all, others only see themselves). |
+| GET | `/api/v1/users/search` | Search users by username, email, unit_number, or contact (Admins can search all; Managers can search within their complexes). |
 | PUT | `/api/v1/users/{user_id}` | Update user details (RBAC enforced). |
 | DELETE | `/api/v1/users/{user_id}` | Delete user (Admin only; super admin cannot be deleted). |
 
@@ -238,6 +248,7 @@ All collection GET endpoints support pagination via `skip` and `limit` query par
 | --- | --- | --- |
 | POST | `/api/v1/announcements/` | Create an announcement for a complex. |
 | GET | `/api/v1/announcements/` | List announcements (Admins see all; others see assigned complexes; filter by `complex_id`). |
+| GET | `/api/v1/announcements/search` | Search announcements by title or description (Admins can search all; others can search within their assigned complexes). |
 | GET | `/api/v1/announcements/{announcement_id}` | Get a specific announcement by ID and mark it as read. |
 | POST | `/api/v1/announcements/{announcement_id}/emotions` | React to an announcement. |
 | GET | `/api/v1/announcements/{announcement_id}/reactions` | List announcement reactions. |
@@ -261,6 +272,7 @@ All collection GET endpoints support pagination via `skip` and `limit` query par
 | GET | `/api/v1/visitors/` | Visitors see their own visitors from the last 7 days; managers/attendants see all visitors in their complex from the last 7 days. |
 | GET | `/api/v1/visitors/manager` | Managers only: list visitors for a specific date (`visit_date` parameter). |
 | PUT | `/api/v1/visitors/{visitor_id}` | Update a visitor (creator, admin, or manager of same complex). |
+| PUT | `/api/v1/visitors/{visitor_id}/status` | Update visitor status (staff only: admin, manager, or attendant). Statuses: PENDING, CHECKED_IN, CHECKED_OUT, NO_SHOW. |
 | DELETE | `/api/v1/visitors/{visitor_id}` | Delete a visitor (creator, admin, or manager of same complex). |
 | GET | `/api/v1/visitors/admin/list` | Admin: list visitors for any complex (requires `complex_id`; optional `visit_date`). |
 | PUT | `/api/v1/visitors/admin/{visitor_id}` | Admin: update any visitor. |
@@ -339,8 +351,61 @@ All collection GET endpoints support pagination via `skip` and `limit` query par
 | PUT | `/api/v1/reservations/{reservation_id}/status` | Update reservation status to ACCEPTED or REJECTED (Admin, Managers, and Staff only). |
 | DELETE | `/api/v1/reservations/{reservation_id}` | Cancel a reservation (Users can cancel their own; Admins/Managers can cancel reservations in their complex). |
 
+### Marketplace Categories
+
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/api/v1/marketplace-categories/` | Create a marketplace category in the manager's complex (Site Managers/Attendants only). |
+| POST | `/api/v1/marketplace-categories/admin` | Admin: create a marketplace category in any complex. |
+| GET | `/api/v1/marketplace-categories/` | List marketplace categories (Admins see all; others see their complex). |
+| PUT | `/api/v1/marketplace-categories/{category_id}` | Update a marketplace category in the manager's complex (Site Managers/Attendants only). |
+| PUT | `/api/v1/marketplace-categories/admin/{category_id}` | Admin: update any marketplace category. |
+| DELETE | `/api/v1/marketplace-categories/{category_id}` | Delete a marketplace category. |
+
+### Marketplace Items
+
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/api/v1/marketplace-items/` | Create a new marketplace item (All users; auto-fills contact from profile). |
+| GET | `/api/v1/marketplace-items/` | List marketplace items (Scoped to user complex; auto-expires old items). |
+| GET | `/api/v1/marketplace-items/my` | List marketplace items created by the current user. |
+| GET | `/api/v1/marketplace-items/{item_id}` | Get a specific marketplace item. |
+| PUT | `/api/v1/marketplace-items/{item_id}` | Update a marketplace item (Owner only; supports relisting). |
+| DELETE | `/api/v1/marketplace-items/{item_id}` | Delete a marketplace item (Owner, Admin, or Staff in same complex for spam moderation). |
+
+### Payments
+
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/api/v1/payments/for-all` | Create a payment for ALL units in the manager's complex (Site Managers only). |
+| POST | `/api/v1/payments/for-specific` | Create a payment for specific unit numbers in the manager's complex (Site Managers only). |
+| GET | `/api/v1/payments/` | List payments for the manager's complex (Site Managers only). |
+| GET | `/api/v1/payments/{payment_id}` | Get a specific payment by ID. |
+| PUT | `/api/v1/payments/{payment_id}` | Update a payment (Manager/Admin only). |
+| DELETE | `/api/v1/payments/{payment_id}` | Delete a payment (soft delete; Manager/Admin only). |
+| PUT | `/api/v1/payments/{payment_id}/records/{record_id}/status` | Update a payment record's status (Staff only: admin, manager, attendant). |
+| GET | `/api/v1/payments/{payment_id}/stats` | Get statistics for a payment (Staff only). |
+| GET | `/api/v1/payments/stats/by-building` | Get payment statistics grouped by building for the manager’s complex (Staff only). |
+| GET | `/api/v1/payments/list/by-building` | List all payment records grouped by building for the manager’s complex (Staff only). |
+| GET | `/api/v1/payments/my/unit-payments` | List payment records for the unit assigned to the current user. |
+| POST | `/api/v1/payments/admin/for-all` | Admin: Create a payment for ALL units in any complex. |
+| POST | `/api/v1/payments/admin/for-specific` | Admin: Create a payment for specific unit numbers in any complex. |
+| GET | `/api/v1/payments/admin/list` | Admin: List all payments, optionally filtered by complex. |
+| GET | `/api/v1/payments/admin/stats/by-building` | Admin: Get payment statistics grouped by building for a complex (requires `complex_id`). |
+| GET | `/api/v1/payments/admin/list/by-building` | Admin: List all payment records grouped by building for a complex (requires `complex_id`). |
+
 ## Special Rules
 
+- **User Unit Numbers:** Each user can have an associated `unit_number` to track where they live within a complex or building. Unit numbers are assigned via user update (PUT `/api/v1/users/{user_id}`), following the same pattern as `complex_ids` and `building_ids` assignments. They are not set during user creation.
+- **Payment Tracking System:** Managers can create payments for units. Two publishing strategies:
+  - **For All Units:** Payment is created for all unique unit numbers in the complex.
+  - **For Specific Units:** Payment is created only for specified unit numbers.
+- **Payment Records:** Each payment automatically creates individual payment records for each target unit number. Records track status (PENDING, PAID, OVERDUE, CANCELLED) and paid date. Multi-resident units share the same payment record for the unit.
+- **Payment Statistics:** Staff can view payment statistics including total records, collected amount, and pending amount.
+- **Marketplace Expiration:** Items automatically expire after 30 days. They can be relisted by the owner by updating with `relist=true`.
+- **Marketplace Images:** Items can have multiple image paths for display.
+- **Marketplace Spam Moderation:** Managers and Attendants can delete marketplace items in their complex to remove spam.
+- **Visitor Status Tracking:** Visitors have a status field (PENDING, CHECKED_IN, CHECKED_OUT, NO_SHOW) that can be updated by staff (admin, manager, or attendant).
 - **Automatic Context:** Many operations (like user creation by managers or issue reporting) automatically determine the `complex_id` from the authenticated user's context.
 - **Boundary Protection:** Managers cannot view or modify users, buildings, or issues outside of the complexes they are assigned to.
 - **Reaction Logic:** Users can have only one reaction per item; posting a new one replaces the previous. Editing a comment clears all its reactions.

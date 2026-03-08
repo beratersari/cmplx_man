@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.core.database import get_db
 from app.models.models import UserModel
@@ -39,6 +39,21 @@ def read_users(
     """List users."""
     service = UserService(db)
     return service.list_users(current_user, skip, limit)
+
+
+@router.get("/search", response_model=List[UserOut], summary="Search Users", description="Search users by username, email, unit_number, or contact. Admins can search all users. Managers can search within their complexes.")
+def search_users(
+    query: str = Query(..., min_length=1, description="Search query for username, email, unit_number, or contact"),
+    complex_id: Optional[int] = Query(None, description="Filter by complex ID (optional for admins)"),
+    role: Optional[UserRole] = Query(None, description="Filter by user role"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Search users by username, email, unit_number, or contact."""
+    service = UserService(db)
+    return service.search_users(current_user, query, complex_id, role, skip, limit)
 
 
 @router.put("/{user_id}", response_model=UserOut, summary="Update User", description="Updates a user's information. Admins can update any user. Site managers can update users who belong to their assigned complexes. Users can update their own profile.")

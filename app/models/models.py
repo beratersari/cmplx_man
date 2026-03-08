@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, E
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.core.database import Base
-from app.core.entities import UserRole, IssueStatus, ReservationStatus
+from app.core.entities import UserRole, IssueStatus, ReservationStatus, MarketplaceItemStatus, VisitorStatus, PaymentStatus, PaymentTargetType
 
 class AuditMixin:
     created_date = Column(DateTime, default=datetime.utcnow)
@@ -42,6 +42,9 @@ class ResidentialComplexModel(Base, AuditMixin):
     issue_categories = relationship("IssueCategoryModel", back_populates="complex")
     reservation_categories = relationship("ReservationCategoryModel", back_populates="complex")
     reservations = relationship("ReservationModel", back_populates="complex")
+    marketplace_categories = relationship("MarketplaceCategoryModel", back_populates="complex")
+    marketplace_items = relationship("MarketplaceItemModel", back_populates="complex")
+    payments = relationship("PaymentModel", back_populates="complex")
 
 class AnnouncementModel(Base, AuditMixin):
     __tablename__ = "announcements"
@@ -136,6 +139,7 @@ class UserModel(Base, AuditMixin):
     role = Column(SQLEnum(UserRole), default=UserRole.SITE_RESIDENT)
     contact = Column(String, nullable=True)
     description = Column(String, nullable=True)
+    unit_number = Column(String, nullable=True)  # Unit/Apartment number where user lives
 
     assigned_complexes = relationship("ResidentialComplexModel", secondary=complex_assignments, back_populates="assigned_users")
     assigned_buildings = relationship("BuildingModel", secondary=building_assignments, back_populates="residents")
@@ -146,6 +150,8 @@ class UserModel(Base, AuditMixin):
     issues = relationship("IssueModel", back_populates="user")
     visitors = relationship("VisitorModel", back_populates="user")
     reservations = relationship("ReservationModel", back_populates="user")
+    marketplace_items = relationship("MarketplaceItemModel", back_populates="user")
+    payment_records = relationship("PaymentRecordModel", back_populates="user")
 
 class IssueModel(Base, AuditMixin):
     __tablename__ = "issues"
@@ -183,6 +189,9 @@ class VisitorModel(Base, AuditMixin):
     complex_id = Column(Integer, ForeignKey("residential_complexes.id"))
     building_id = Column(Integer, default=0)
     user_id = Column(Integer, ForeignKey("users.id"))
+    status = Column(SQLEnum(VisitorStatus), default=VisitorStatus.PENDING)
+    status_updated_by = Column(Integer, nullable=True)
+    status_updated_date = Column(DateTime, nullable=True)
 
     complex = relationship("ResidentialComplexModel", back_populates="visitors")
     user = relationship("UserModel", back_populates="visitors")
@@ -228,3 +237,74 @@ class ReservationModel(Base, AuditMixin):
     category = relationship("ReservationCategoryModel", back_populates="reservations")
     user = relationship("UserModel", back_populates="reservations")
     complex = relationship("ResidentialComplexModel", back_populates="reservations")
+
+
+class MarketplaceCategoryModel(Base, AuditMixin):
+    __tablename__ = "marketplace_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    complex_id = Column(Integer, ForeignKey("residential_complexes.id"))
+
+    complex = relationship("ResidentialComplexModel", back_populates="marketplace_categories")
+    items = relationship("MarketplaceItemModel", back_populates="category")
+
+
+class MarketplaceItemModel(Base, AuditMixin):
+    __tablename__ = "marketplace_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category_id = Column(Integer, ForeignKey("marketplace_categories.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    username = Column(String, nullable=False)
+    contact = Column(String, nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    price = Column(Integer, nullable=False)  # Stored as cents to avoid floating point issues
+    complex_id = Column(Integer, ForeignKey("residential_complexes.id"))
+    status = Column(SQLEnum(MarketplaceItemStatus), default=MarketplaceItemStatus.AVAILABLE)
+    listed_date = Column(DateTime, default=datetime.utcnow)  # For tracking 30-day expiration
+
+    category = relationship("MarketplaceCategoryModel", back_populates="items")
+    user = relationship("UserModel", back_populates="marketplace_items")
+    complex = relationship("ResidentialComplexModel", back_populates="marketplace_items")
+    images = relationship("MarketplaceItemImageModel", back_populates="item", cascade="all, delete-orphan")
+
+
+class MarketplaceItemImageModel(Base):
+    __tablename__ = "marketplace_item_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    item_id = Column(Integer, ForeignKey("marketplace_items.id"))
+    img_path = Column(String, nullable=False)
+
+    item = relationship("MarketplaceItemModel", back_populates="images")
+
+
+class PaymentModel(Base, AuditMixin):
+    __tablename__ = "payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    amount = Column(Integer, nullable=False)  # Stored as cents to avoid floating point issues
+    complex_id = Column(Integer, ForeignKey("residential_complexes.id"))
+    target_type = Column(SQLEnum(PaymentTargetType), default=PaymentTargetType.ALL)
+    unit_numbers = Column(String, nullable=True)  # Comma-separated unit numbers for SPECIFIC target
+    due_date = Column(DateTime, nullable=True)
+
+    complex = relationship("ResidentialComplexModel", back_populates="payments")
+    records = relationship("PaymentRecordModel", back_populates="payment", cascade="all, delete-orphan")
+
+
+class PaymentRecordModel(Base, AuditMixin):
+    __tablename__ = "payment_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    payment_id = Column(Integer, ForeignKey("payments.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    unit_number = Column(String, nullable=False)
+    status = Column(SQLEnum(PaymentStatus), default=PaymentStatus.PENDING)
+    paid_date = Column(DateTime, nullable=True)
+
+    payment = relationship("PaymentModel", back_populates="records")
+    user = relationship("UserModel", back_populates="payment_records")

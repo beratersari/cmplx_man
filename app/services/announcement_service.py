@@ -423,6 +423,45 @@ class AnnouncementService:
         self.announcement_repo.delete_comment_reaction(emotion)
         return {"message": "Reaction removed"}
     
+    def search_announcements(
+        self,
+        current_user: UserModel,
+        query: str,
+        complex_id: Optional[int] = None,
+        skip: int = 0,
+        limit: int = 50
+    ) -> List[dict]:
+        """Search announcements by title or description."""
+        logger.info(f"User {current_user.username} searching announcements with query: {query}")
+        
+        if current_user.role == UserRole.ADMIN:
+            announcements = self.announcement_repo.search_announcements_admin(query, complex_id, skip, limit)
+        else:
+            assigned_complex_ids = [c.id for c in current_user.assigned_complexes]
+            if current_user.role == UserRole.SITE_RESIDENT:
+                building_complex_ids = [b.complex_id for b in current_user.assigned_buildings]
+                assigned_complex_ids = list(set(assigned_complex_ids + building_complex_ids))
+            
+            if complex_id:
+                if complex_id not in assigned_complex_ids:
+                    return []
+                search_complex_ids = [complex_id]
+            else:
+                search_complex_ids = assigned_complex_ids
+            
+            if not search_complex_ids:
+                return []
+            
+            announcements = self.announcement_repo.search_announcements(query, search_complex_ids, skip, limit)
+        
+        # Enrich announcements
+        result = []
+        for a in announcements:
+            a_out = self._enrich_announcement(a, current_user)
+            result.append(a_out)
+        
+        return result
+    
     # Private helper methods
     def _enrich_announcement(self, announcement: AnnouncementModel, current_user: UserModel = None) -> dict:
         """Enrich announcement with emotion counts, reactions, comments, and read status."""

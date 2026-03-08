@@ -21,6 +21,32 @@ class ReservationStatus(str, Enum):
     ACCEPTED = "ACCEPTED"
     REJECTED = "REJECTED"
 
+
+class MarketplaceItemStatus(str, Enum):
+    AVAILABLE = "AVAILABLE"
+    SOLD = "SOLD"
+    RESERVED = "RESERVED"
+    EXPIRED = "EXPIRED"
+
+
+class VisitorStatus(str, Enum):
+    PENDING = "PENDING"
+    CHECKED_IN = "CHECKED_IN"
+    CHECKED_OUT = "CHECKED_OUT"
+    NO_SHOW = "NO_SHOW"
+
+
+class PaymentStatus(str, Enum):
+    PENDING = "PENDING"
+    PAID = "PAID"
+    OVERDUE = "OVERDUE"
+    CANCELLED = "CANCELLED"
+
+
+class PaymentTargetType(str, Enum):
+    ALL = "ALL"  # All units in the complex
+    SPECIFIC = "SPECIFIC"  # Specific unit numbers
+
 class AuditBase(BaseModel):
     created_date: datetime = datetime.utcnow()
     created_by: Optional[int] = None
@@ -69,6 +95,7 @@ class User(AuditBase):
     role: UserRole
     contact: Optional[str] = None
     description: Optional[str] = None
+    unit_number: Optional[str] = None
 
 class Vehicle(AuditBase):
     id: Optional[int] = None
@@ -85,6 +112,9 @@ class Visitor(AuditBase):
     visit_date: datetime
     complex_id: int
     user_id: int
+    status: 'VisitorStatus' = None
+    status_updated_by: Optional[int] = None
+    status_updated_date: Optional[datetime] = None
 
 
 class ReservationCategory(AuditBase):
@@ -106,3 +136,42 @@ class Reservation(AuditBase):
     status: ReservationStatus = ReservationStatus.PENDING
     status_updated_by: Optional[int] = None
     status_updated_date: Optional[datetime] = None
+
+
+class MarketplaceCategory(AuditBase):
+    id: Optional[int] = None
+    name: str
+    complex_id: int
+
+
+class MarketplaceItem(AuditBase):
+    id: Optional[int] = None
+    category_id: int
+    user_id: int
+    username: str
+    contact: str
+    title: str
+    description: str
+    price: float
+    complex_id: int
+    status: MarketplaceItemStatus = MarketplaceItemStatus.AVAILABLE
+    images: List[str] = []
+
+
+class Payment(AuditBase):
+    id: Optional[int] = None
+    title: str
+    amount: float
+    complex_id: int
+    target_type: PaymentTargetType  # ALL or SPECIFIC
+    unit_numbers: List[str] = []  # Empty if target_type is ALL
+    due_date: Optional[datetime] = None
+
+
+class PaymentRecord(AuditBase):
+    id: Optional[int] = None
+    payment_id: int
+    user_id: int
+    unit_number: str
+    status: PaymentStatus = PaymentStatus.PENDING
+    paid_date: Optional[datetime] = None

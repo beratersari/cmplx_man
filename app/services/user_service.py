@@ -119,6 +119,9 @@ class UserService:
         if user_in.description is not None:
             update_data["description"] = user_in.description
         
+        if user_in.unit_number is not None:
+            update_data["unit_number"] = user_in.unit_number
+        
         # Update user
         user = self.user_repo.update(user, update_data, updated_by=current_user.id)
         
@@ -159,6 +162,39 @@ class UserService:
     ) -> List[UserModel]:
         """Get all users in a complex."""
         return self.user_repo.get_users_in_complex(complex_id, skip, limit)
+    
+    def search_users(
+        self,
+        current_user: UserModel,
+        query: str,
+        complex_id: Optional[int] = None,
+        role: Optional[UserRole] = None,
+        skip: int = 0,
+        limit: int = 50
+    ) -> List[UserModel]:
+        """Search users by username, email, or unit_number."""
+        logger.info(f"User {current_user.username} searching users with query: {query}")
+        
+        # Admin can search all users, optionally filtered by complex
+        if current_user.role == UserRole.ADMIN:
+            return self.user_repo.search_users(query, complex_id, role, skip, limit)
+        
+        # Managers can only search within their complexes
+        if current_user.role == UserRole.SITE_MANAGER:
+            if not current_user.assigned_complexes:
+                return []
+            # Use first complex if not specified
+            search_complex_id = complex_id if complex_id else current_user.assigned_complexes[0].id
+            # Validate manager has access to this complex
+            manager_complex_ids = {c.id for c in current_user.assigned_complexes}
+            if complex_id and complex_id not in manager_complex_ids:
+                raise HTTPException(status_code=403, detail="Not authorized to search in this complex")
+            return self.user_repo.search_users(query, search_complex_id, role, skip, limit)
+        
+        # Other users can only see themselves
+        if query.lower() in current_user.username.lower():
+            return [current_user]
+        return []
     
     # Private validation methods
     def _validate_create_permission(self, current_user: UserModel, target_role: UserRole):

@@ -104,3 +104,36 @@ class UserRepository(BaseRepository[UserModel]):
         ).all()
         user.assigned_buildings = buildings
         self.db.commit()
+    
+    def search_users(
+        self,
+        query: str,
+        complex_id: Optional[int] = None,
+        role: Optional[UserRole] = None,
+        skip: int = 0,
+        limit: int = 50
+    ) -> List[UserModel]:
+        """Search users by username, email, or unit_number."""
+        q = self.db.query(UserModel).filter(UserModel.is_active == True)
+        
+        # Apply search filter
+        search_term = f"%{query}%"
+        q = q.filter(
+            (UserModel.username.ilike(search_term)) |
+            (UserModel.email.ilike(search_term)) |
+            (UserModel.unit_number.ilike(search_term)) |
+            (UserModel.contact.ilike(search_term))
+        )
+        
+        # Filter by complex if provided
+        if complex_id:
+            from app.models.models import ResidentialComplexModel
+            q = q.join(UserModel.assigned_complexes).filter(
+                ResidentialComplexModel.id == complex_id
+            )
+        
+        # Filter by role if provided
+        if role:
+            q = q.filter(UserModel.role == role)
+        
+        return q.offset(skip).limit(limit).all()

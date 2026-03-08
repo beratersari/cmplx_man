@@ -219,3 +219,37 @@ class AnnouncementRepository(BaseRepository[AnnouncementModel]):
         return self.db.query(CommentEmotionModel).filter(
             CommentEmotionModel.comment_id == comment_id
         ).all()
+    
+    def search_announcements(
+        self,
+        query: str,
+        complex_ids: List[int],
+        skip: int = 0,
+        limit: int = 50
+    ) -> List[AnnouncementModel]:
+        """Search announcements by title or description within specified complexes."""
+        search_term = f"%{query}%"
+        return self.db.query(AnnouncementModel).filter(
+            AnnouncementModel.complex_id.in_(complex_ids),
+            (AnnouncementModel.title.ilike(search_term)) |
+            (AnnouncementModel.description.ilike(search_term))
+        ).order_by(AnnouncementModel.created_date.desc()).offset(skip).limit(limit).all()
+    
+    def search_announcements_admin(
+        self,
+        query: str,
+        complex_id: Optional[int] = None,
+        skip: int = 0,
+        limit: int = 50
+    ) -> List[AnnouncementModel]:
+        """Search announcements by title or description (admin version with optional complex filter)."""
+        search_term = f"%{query}%"
+        q = self.db.query(AnnouncementModel).filter(
+            (AnnouncementModel.title.ilike(search_term)) |
+            (AnnouncementModel.description.ilike(search_term))
+        )
+        
+        if complex_id:
+            q = q.filter(AnnouncementModel.complex_id == complex_id)
+        
+        return q.order_by(AnnouncementModel.created_date.desc()).offset(skip).limit(limit).all()
