@@ -13,7 +13,8 @@ from .schemas import (
     CommentCreate, 
     ReplyCreate,
     CommentOut,
-    UserReaction
+    UserReaction,
+    AnnouncementReadStats
 )
 
 router = APIRouter()
@@ -41,6 +42,28 @@ def read_announcements(
     """List announcements."""
     service = AnnouncementService(db)
     return service.list_announcements(current_user, complex_id, skip, limit)
+
+
+@router.get("/{announcement_id}", response_model=AnnouncementOut, summary="Get Announcement", description="Get a specific announcement by ID. Marks the announcement as read for the current user.")
+def get_announcement(
+    announcement_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get an announcement by ID and mark it as read."""
+    service = AnnouncementService(db)
+    return service.get_announcement_by_id(announcement_id, current_user)
+
+
+@router.get("/{announcement_id}/read-stats", response_model=AnnouncementReadStats, summary="Get Announcement Read Stats", description="Retrieves statistics about who has read the announcement. Restricted to staff.")
+def get_announcement_read_stats(
+    announcement_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get read statistics for an announcement."""
+    service = AnnouncementService(db)
+    return service.get_read_stats(announcement_id, current_user)
 
 
 @router.post("/{announcement_id}/emotions", summary="React to Announcement", description="Adds or updates an emoji reaction to an announcement. Restricted to users assigned to the announcement's complex.")

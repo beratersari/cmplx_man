@@ -2,7 +2,12 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
-from app.repositories import AnnouncementRepository, ComplexRepository, UserRepository
+from app.repositories import (
+    AnnouncementRepository, 
+    ComplexRepository, 
+    UserRepository,
+    AnnouncementReadRepository
+)
 from app.models.models import UserModel, AnnouncementModel, CommentModel
 from app.core.entities import UserRole
 from app.api.v1.schemas import (
@@ -13,7 +18,10 @@ from app.api.v1.schemas import (
     CommentOut,
     EmotionCount,
     UserReaction,
-    AnnouncementOut
+    AnnouncementOut,
+    AnnouncementReadStats,
+    AnnouncementReadOut,
+    UserOut
 )
 from app.core.logging_config import logger
 
@@ -26,6 +34,7 @@ class AnnouncementService:
         self.announcement_repo = AnnouncementRepository(db)
         self.complex_repo = ComplexRepository(db)
         self.user_repo = UserRepository(db)
+        self.read_repo = AnnouncementReadRepository(db)
     
     def create_announcement(
         self, 
@@ -56,13 +65,66 @@ class AnnouncementService:
         logger.info(f"Announcement created successfully: {new_announcement.title} (ID: {new_announcement.id})")
         return new_announcement
     
-    def get_announcement_by_id(self, announcement_id: int) -> AnnouncementModel:
-        """Get announcement by ID or raise exception."""
+    def get_announcement_by_id(self, announcement_id: int, current_user: UserModel) -> AnnouncementOut:
+        """Get announcement by ID and mark it as read for the current user."""
         announcement = self.announcement_repo.get_by_id(announcement_id)
         if not announcement:
             raise HTTPException(status_code=404, detail="Announcement not found")
-        return announcement
-    
+        
+        self._validate_access_permission(current_user, announcement)
+        
+        # Mark as read if not already
+        existing = self.read_repo.get_by_announcement_and_user(announcement_id, current_user.id)
+        if not existing:
+            self.read_repo.create({
+                "announcement_id": announcement_id,
+                "user_id": current_user.id
+            })
+            logger.info(f"User {current_user.username} (ID: {current_user.id}) marked announcement {announcement_id} as read")
+        
+        return self._enrich_announcement(announcement, current_user)
+
+    def get_read_stats(self, announcement_id: int, current_user: UserModel) -> AnnouncementReadStats:
+        """Get read/unread statistics for an announcement. Staff only."""
+        announcement = self.announcement_repo.get_by_id(announcement_id)
+        if not announcement:
+            raise HTTPException(status_code=404, detail="Announcement not found")
+        
+        if current_user.role not in [UserRole.ADMIN, UserRole.SITE_MANAGER, UserRole.SITE_ATTENDANT]:
+            raise HTTPException(status_code=403, detail="Only staff can view read statistics")
+        
+        self._validate_access_permission(current_user, announcement)
+        
+        reads = self.read_repo.get_reads_by_announcement(announcement_id)
+        read_user_ids = [r.user_id for r in reads]
+        
+        # Get all users assigned to this complex
+        complex_obj = self.complex_repo.get_by_id(announcement.complex_id)
+        all_users = complex_obj.assigned_users
+        
+        read_by = []
+        for r in reads:
+            user = self.user_repo.get_by_id(r.user_id)
+            if user:
+                read_by.append(AnnouncementReadOut(
+                    user_id=user.id,
+                    username=user.username,
+                    read_date=r.read_date
+                ))
+        
+        unread_by = []
+        for u in all_users:
+            if u.id not in read_user_ids:
+                unread_by.append(UserOut.from_orm(u))
+        
+        return AnnouncementReadStats(
+            announcement_id=announcement_id,
+            read_count=len(read_by),
+            unread_count=len(unread_by),
+            read_by=read_by,
+            unread_by=unread_by
+        )
+
     def list_announcements(
         self, 
         current_user: UserModel, 
@@ -91,10 +153,10 @@ class AnnouncementService:
             else:
                 announcements = self.announcement_repo.get_announcements_for_complexes(assigned_complex_ids, skip, limit)
         
-        # Enrich announcements with emotion counts and comments
+        # Enrich announcements with emotion counts, comments, and read status
         result = []
         for a in announcements:
-            a_out = self._enrich_announcement(a)
+            a_out = self._enrich_announcement(a, current_user)
             result.append(a_out)
         
         return result
@@ -362,8 +424,8 @@ class AnnouncementService:
         return {"message": "Reaction removed"}
     
     # Private helper methods
-    def _enrich_announcement(self, announcement: AnnouncementModel) -> dict:
-        """Enrich announcement with emotion counts, reactions, and comments."""
+    def _enrich_announcement(self, announcement: AnnouncementModel, current_user: UserModel = None) -> dict:
+        """Enrich announcement with emotion counts, reactions, comments, and read status."""
         emotion_counts = self.announcement_repo.get_emotion_counts(announcement.id)
         reactions = self.announcement_repo.get_user_reactions(announcement.id)
         
@@ -377,6 +439,20 @@ class AnnouncementService:
         a_out.emotion_counts = [EmotionCount(emoji=e.emoji, count=e.count) for e in emotion_counts]
         a_out.user_reactions = user_reactions
         a_out.comments = self._get_comment_tree(announcement.id)
+        
+        # Read status
+        if current_user:
+            read_entry = self.read_repo.get_by_announcement_and_user(announcement.id, current_user.id)
+            a_out.is_read = read_entry is not None
+            
+            # Staff can see counts
+            if current_user.role in [UserRole.ADMIN, UserRole.SITE_MANAGER, UserRole.SITE_ATTENDANT]:
+                reads = self.read_repo.get_reads_by_announcement(announcement.id)
+                a_out.read_count = len(reads)
+                
+                complex_obj = self.complex_repo.get_by_id(announcement.complex_id)
+                if complex_obj:
+                    a_out.unread_count = len(complex_obj.assigned_users) - a_out.read_count
         
         return a_out
     

@@ -15,6 +15,12 @@ class IssueStatus(str, Enum):
     RESOLVED = "RESOLVED"
     CLOSED = "CLOSED"
 
+
+class ReservationStatus(str, Enum):
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+
 class AuditBase(BaseModel):
     created_date: datetime = datetime.utcnow()
     created_by: Optional[int] = None
@@ -79,3 +85,24 @@ class Visitor(AuditBase):
     visit_date: datetime
     complex_id: int
     user_id: int
+
+
+class ReservationCategory(AuditBase):
+    id: Optional[int] = None
+    name: str
+    complex_id: int
+
+
+class Reservation(AuditBase):
+    id: Optional[int] = None
+    category_id: int
+    user_id: int
+    complex_id: int
+    reservation_date: datetime
+    start_hour: str
+    end_hour: str
+    person_count: int = 1
+    notes: Optional[str] = None
+    status: ReservationStatus = ReservationStatus.PENDING
+    status_updated_by: Optional[int] = None
+    status_updated_date: Optional[datetime] = None

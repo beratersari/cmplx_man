@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, E
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.core.database import Base
-from app.core.entities import UserRole, IssueStatus
+from app.core.entities import UserRole, IssueStatus, ReservationStatus
 
 class AuditMixin:
     created_date = Column(DateTime, default=datetime.utcnow)
@@ -40,6 +40,8 @@ class ResidentialComplexModel(Base, AuditMixin):
     issues = relationship("IssueModel", back_populates="complex")
     visitors = relationship("VisitorModel", back_populates="complex")
     issue_categories = relationship("IssueCategoryModel", back_populates="complex")
+    reservation_categories = relationship("ReservationCategoryModel", back_populates="complex")
+    reservations = relationship("ReservationModel", back_populates="complex")
 
 class AnnouncementModel(Base, AuditMixin):
     __tablename__ = "announcements"
@@ -54,6 +56,18 @@ class AnnouncementModel(Base, AuditMixin):
     complex = relationship("ResidentialComplexModel", back_populates="announcements")
     emotions = relationship("AnnouncementEmotionModel", back_populates="announcement")
     comments = relationship("CommentModel", back_populates="announcement")
+    reads = relationship("AnnouncementReadModel", back_populates="announcement", cascade="all, delete-orphan")
+
+class AnnouncementReadModel(Base):
+    __tablename__ = "announcement_reads"
+
+    id = Column(Integer, primary_key=True, index=True)
+    announcement_id = Column(Integer, ForeignKey("announcements.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    read_date = Column(DateTime, default=datetime.utcnow)
+
+    announcement = relationship("AnnouncementModel", back_populates="reads")
+    user = relationship("UserModel", back_populates="announcement_reads")
 
 class AnnouncementEmotionModel(Base):
     __tablename__ = "announcement_emotions"
@@ -128,8 +142,10 @@ class UserModel(Base, AuditMixin):
     vehicles = relationship("VehicleModel", back_populates="user", cascade="all, delete-orphan")
     announcement_emotions = relationship("AnnouncementEmotionModel", back_populates="user")
     comment_emotions = relationship("CommentEmotionModel", back_populates="user")
+    announcement_reads = relationship("AnnouncementReadModel", back_populates="user")
     issues = relationship("IssueModel", back_populates="user")
     visitors = relationship("VisitorModel", back_populates="user")
+    reservations = relationship("ReservationModel", back_populates="user")
 
 class IssueModel(Base, AuditMixin):
     __tablename__ = "issues"
@@ -180,3 +196,35 @@ class IssueCategoryModel(Base, AuditMixin):
 
     complex = relationship("ResidentialComplexModel", back_populates="issue_categories")
     issues = relationship("IssueModel", back_populates="issue_category")
+
+
+class ReservationCategoryModel(Base, AuditMixin):
+    __tablename__ = "reservation_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    complex_id = Column(Integer, ForeignKey("residential_complexes.id"))
+
+    complex = relationship("ResidentialComplexModel", back_populates="reservation_categories")
+    reservations = relationship("ReservationModel", back_populates="category")
+
+
+class ReservationModel(Base, AuditMixin):
+    __tablename__ = "reservations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category_id = Column(Integer, ForeignKey("reservation_categories.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    complex_id = Column(Integer, ForeignKey("residential_complexes.id"))
+    reservation_date = Column(DateTime, nullable=False)
+    start_hour = Column(String, nullable=False)  # Format: "HH:MM"
+    end_hour = Column(String, nullable=False)    # Format: "HH:MM"
+    person_count = Column(Integer, default=1)
+    notes = Column(String, nullable=True)
+    status = Column(SQLEnum(ReservationStatus), default=ReservationStatus.PENDING)
+    status_updated_by = Column(Integer, nullable=True)
+    status_updated_date = Column(DateTime, nullable=True)
+
+    category = relationship("ReservationCategoryModel", back_populates="reservations")
+    user = relationship("UserModel", back_populates="reservations")
+    complex = relationship("ResidentialComplexModel", back_populates="reservations")

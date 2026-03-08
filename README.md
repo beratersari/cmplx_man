@@ -104,7 +104,9 @@ app/
 │   ├── vehicle_repository.py   # Vehicle data access
 │   ├── issue_repository.py     # Issue data access
 │   ├── visitor_repository.py   # Visitor data access
-│   └── issue_category_repository.py  # Issue Category data access
+│   ├── issue_category_repository.py  # Issue Category data access
+│   ├── reservation_category_repository.py  # Reservation Category data access
+│   └── reservation_repository.py      # Reservation data access
 │
 ├── services/                   # Business logic layer
 │   ├── __init__.py
@@ -116,7 +118,9 @@ app/
 │   ├── vehicle_service.py      # Vehicle business logic
 │   ├── issue_service.py        # Issue business logic
 │   ├── visitor_service.py      # Visitor business logic
-│   └── issue_category_service.py     # Issue Category business logic
+│   ├── issue_category_service.py     # Issue Category business logic
+│   ├── reservation_category_service.py # Reservation Category business logic
+│   └── reservation_service.py        # Reservation business logic
 │
 ├── api/                        # Presentation layer
 │   ├── __init__.py
@@ -132,7 +136,9 @@ app/
 │       ├── vehicles.py         # Vehicle endpoints
 │       ├── issues.py           # Issue endpoints
 │       ├── visitors.py         # Visitor endpoints
-│       └── categories.py       # Issue Category endpoints
+│       ├── categories.py       # Issue Category endpoints
+│       ├── reservation_categories.py  # Reservation Category endpoints
+│       └── reservations.py     # Reservation endpoints
 │
 └── main.py                     # Application entry point
 ```
@@ -232,6 +238,7 @@ All collection GET endpoints support pagination via `skip` and `limit` query par
 | --- | --- | --- |
 | POST | `/api/v1/announcements/` | Create an announcement for a complex. |
 | GET | `/api/v1/announcements/` | List announcements (Admins see all; others see assigned complexes; filter by `complex_id`). |
+| GET | `/api/v1/announcements/{announcement_id}` | Get a specific announcement by ID and mark it as read. |
 | POST | `/api/v1/announcements/{announcement_id}/emotions` | React to an announcement. |
 | GET | `/api/v1/announcements/{announcement_id}/reactions` | List announcement reactions. |
 | PUT | `/api/v1/announcements/{announcement_id}` | Update an announcement. |
@@ -244,6 +251,7 @@ All collection GET endpoints support pagination via `skip` and `limit` query par
 | DELETE | `/api/v1/announcements/comments/{comment_id}` | Delete a comment (creator, Admins, or assigned Site Managers). |
 | DELETE | `/api/v1/announcements/{announcement_id}/emotions` | Remove the current user’s reaction from an announcement. |
 | DELETE | `/api/v1/announcements/comments/{comment_id}/emotions` | Remove the current user’s reaction from a comment. |
+| GET | `/api/v1/announcements/{announcement_id}/read-stats` | Get read/unread statistics for an announcement (Staff only). |
 
 ### Visitors
 
@@ -305,6 +313,32 @@ All collection GET endpoints support pagination via `skip` and `limit` query par
 | GET | `/api/v1/issues/stats/by-category` | Issue counts grouped by category for manager's complex. |
 | GET | `/api/v1/issues/stats/by-category/admin` | Issue counts grouped by category for a specific complex (admin only; requires `complex_id`). |
 
+### Reservation Categories
+
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/api/v1/reservation-categories/` | Create a reservation category in the manager's complex (Site Managers only). |
+| POST | `/api/v1/reservation-categories/admin` | Admin: create a reservation category in any complex. |
+| GET | `/api/v1/reservation-categories/` | List reservation categories (Admins see all; Managers see their complex; Users see their assigned complex; filter by `complex_id`). |
+| PUT | `/api/v1/reservation-categories/{category_id}` | Update a reservation category in the manager's complex (Site Managers only). |
+| PUT | `/api/v1/reservation-categories/admin/{category_id}` | Admin: update any reservation category including complex assignment. |
+| DELETE | `/api/v1/reservation-categories/{category_id}` | Delete a reservation category (Admins or assigned Site Managers). |
+
+### Reservations
+
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/api/v1/reservations/` | Create a reservation for the current user (Users can make reservations in their assigned complex; status is PENDING by default). |
+| POST | `/api/v1/reservations/admin` | Admin: create a reservation for any user in any complex. |
+| GET | `/api/v1/reservations/` | List reservations (Admins see all; Managers/Attendants see their complex; Residents see their own; filter by `complex_id`, `date`, and `status`). |
+| GET | `/api/v1/reservations/my` | Get all reservations for the current user. |
+| GET | `/api/v1/reservations/overlap-stats` | Get statistics about other accepted reservations that overlap with a given time interval (requires `category_id`, `date`, `start_hour`, and `end_hour`). |
+| GET | `/api/v1/reservations/{reservation_id}` | Get a specific reservation by ID (Authorized for owner, admin, manager, and staff). |
+| GET | `/api/v1/reservations/{reservation_id}/overlap-stats` | Get statistics about other accepted reservations that overlap with a specific reservation (requires `reservation_id`; returns count and total people). |
+| PUT | `/api/v1/reservations/{reservation_id}` | Update a reservation (Users can update their own; Admins/Managers can update reservations in their complex). |
+| PUT | `/api/v1/reservations/{reservation_id}/status` | Update reservation status to ACCEPTED or REJECTED (Admin, Managers, and Staff only). |
+| DELETE | `/api/v1/reservations/{reservation_id}` | Cancel a reservation (Users can cancel their own; Admins/Managers can cancel reservations in their complex). |
+
 ## Special Rules
 
 - **Automatic Context:** Many operations (like user creation by managers or issue reporting) automatically determine the `complex_id` from the authenticated user's context.
@@ -312,6 +346,83 @@ All collection GET endpoints support pagination via `skip` and `limit` query par
 - **Reaction Logic:** Users can have only one reaction per item; posting a new one replaces the previous. Editing a comment clears all its reactions.
 - **Deletions:** Removing an entity (Announcement, Comment, etc.) also cleans up its associated reactions and children.
 - **Audit Trails:** All entities track `created_by`, `created_date`, `updated_by`, and `updated_date`.
+- **Reservation Workflow:** Reservations start with PENDING status. Admin, Managers, and Staff can update the status to ACCEPTED or REJECTED. The system tracks who updated the status (`status_updated_by`) and when (`status_updated_date`).
+
+## Security Features
+
+### Rate Limiting and DDoS Protection
+
+The API implements multiple layers of rate limiting to protect against DDoS attacks:
+
+#### Global Rate Limits (per IP)
+- **Per Second:** 20 requests
+- **Per Minute:** 200 requests
+- **Per Hour:** 5,000 requests
+
+#### Endpoint-Specific Limits
+- **Auth Endpoints (login, register):** 10 requests/minute (stricter to prevent brute force)
+- **Write Operations (POST, PUT, DELETE):** 50 requests/minute
+- **Read Operations (GET):** 100 requests/minute
+
+#### Burst Protection
+- Maximum 10 concurrent requests in a 1-second burst window
+
+#### Blocking
+- IPs that violate rate limits are blocked for 5 minutes
+- Blocked IPs receive HTTP 429 (Too Many Requests) with `Retry-After` header
+
+#### Request Size Limits
+- Maximum request body size: 10 MB
+
+### Security Headers
+
+All responses include the following security headers:
+
+| Header | Value | Purpose |
+| --- | --- | --- |
+| `X-Frame-Options` | `DENY` | Prevents clickjacking attacks |
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME type sniffing |
+| `X-XSS-Protection` | `1; mode=block` | Enables browser XSS filter |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Controls referrer information |
+| `Content-Security-Policy` | `default-src 'self'` | Prevents XSS and injection attacks |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | Forces HTTPS connections |
+| `Permissions-Policy` | `geolocation=(), microphone=(), camera=()` | Restricts browser features |
+
+### Rate Limit Headers
+
+API responses include rate limit information:
+
+| Header | Description |
+| --- | --- |
+| `X-RateLimit-Limit` | Maximum requests allowed per minute |
+| `X-RateLimit-Remaining` | Remaining requests in current window |
+| `Retry-After` | Seconds until rate limit resets (only when limited) |
+
+### Whitelisted Endpoints
+
+The following endpoints are not rate-limited:
+- `/` - Root endpoint
+- `/health` - Health check endpoint
+- `/docs` - Swagger UI
+- `/redoc` - ReDoc documentation
+- `/openapi.json` - OpenAPI schema
+
+### Configuration
+
+Rate limiting can be configured in `app/core/rate_limiter.py`:
+
+```python
+class RateLimitConfig:
+    GLOBAL_REQUESTS_PER_SECOND = 20
+    GLOBAL_REQUESTS_PER_MINUTE = 200
+    GLOBAL_REQUESTS_PER_HOUR = 5000
+    AUTH_REQUESTS_PER_MINUTE = 10
+    WRITE_REQUESTS_PER_MINUTE = 50
+    READ_REQUESTS_PER_MINUTE = 100
+    BURST_SIZE = 10
+    BLOCK_DURATION_SECONDS = 300
+    MAX_REQUEST_SIZE = 10 * 1024 * 1024  # 10 MB
+```
 
 ## Architecture Benefits
 

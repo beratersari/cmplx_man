@@ -167,6 +167,27 @@ class AnnouncementOut(AnnouncementBase):
     emotion_counts: List[EmotionCount] = []
     user_reactions: List[UserReaction] = []
     comments: List[CommentOut] = []
+    is_read: bool = False
+    read_count: Optional[int] = None
+    unread_count: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+class AnnouncementReadOut(BaseModel):
+    user_id: int
+    username: str
+    read_date: datetime
+
+    class Config:
+        from_attributes = True
+
+class AnnouncementReadStats(BaseModel):
+    announcement_id: int
+    read_count: int
+    unread_count: int
+    read_by: List[AnnouncementReadOut] = []
+    unread_by: List[UserOut] = []
 
     class Config:
         from_attributes = True
@@ -312,3 +333,92 @@ class IssueCountByCategory(BaseModel):
     category_id: int
     category_name: str
     issue_count: int
+
+
+# Reservation Category Schemas
+class ReservationCategoryBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+
+class ReservationCategoryCreate(ReservationCategoryBase):
+    """Schema for managers to create a reservation category in their complex."""
+    pass
+
+class AdminReservationCategoryCreate(ReservationCategoryBase):
+    """Schema for admins to create a reservation category in any complex."""
+    complex_id: int = Field(..., gt=0)
+
+class ReservationCategoryOut(BaseModel):
+    id: int
+    name: str
+    complex_id: int
+    created_date: datetime
+    created_by: Optional[int]
+    updated_date: Optional[datetime]
+    updated_by: Optional[int]
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+class ReservationCategoryUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+
+
+# Reservation Schemas
+class ReservationBase(BaseModel):
+    category_id: int = Field(..., gt=0)
+    reservation_date: datetime
+    start_hour: str = Field(..., pattern="^([01]?[0-9]|2[0-3]):([0-5][0-9])$")
+    end_hour: str = Field(..., pattern="^([01]?[0-9]|2[0-3]):([0-5][0-9])$")
+    person_count: int = Field(default=1, gt=0)
+    notes: Optional[str] = Field(None, max_length=500)
+
+class ReservationCreate(ReservationBase):
+    """Schema for creating a reservation."""
+    pass
+
+class AdminReservationCreate(ReservationBase):
+    """Schema for admin to create a reservation for any user."""
+    user_id: int = Field(..., gt=0)
+    complex_id: int = Field(..., gt=0)
+
+class ReservationUpdate(BaseModel):
+    category_id: Optional[int] = Field(None, gt=0)
+    reservation_date: Optional[datetime] = None
+    start_hour: Optional[str] = Field(None, pattern="^([01]?[0-9]|2[0-3]):([0-5][0-9])$")
+    end_hour: Optional[str] = Field(None, pattern="^([01]?[0-9]|2[0-3]):([0-5][0-9])$")
+    person_count: Optional[int] = Field(None, gt=0)
+    notes: Optional[str] = Field(None, max_length=500)
+
+class ReservationStatusUpdate(BaseModel):
+    status: str = Field(..., pattern="^(PENDING|ACCEPTED|REJECTED)$")
+
+class ReservationOverlapStats(BaseModel):
+    other_reservations_count: int
+    total_people_count: int
+
+class ReservationOverlapStatsById(BaseModel):
+    reservation_id: int
+    other_accepted_reservations_count: int
+    total_people_count: int
+
+class ReservationOut(BaseModel):
+    id: int
+    category_id: int
+    user_id: int
+    complex_id: int
+    reservation_date: datetime
+    start_hour: str
+    end_hour: str
+    person_count: int
+    notes: Optional[str]
+    status: str
+    status_updated_by: Optional[int]
+    status_updated_date: Optional[datetime]
+    created_date: datetime
+    created_by: Optional[int]
+    updated_date: Optional[datetime]
+    updated_by: Optional[int]
+
+    class Config:
+        from_attributes = True
