@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base, SessionLocal
 from app.models.models import UserModel
 from app.core.security import get_password_hash
@@ -16,6 +17,15 @@ app = FastAPI(
     title="Apartment Management API",
     description="API for managing apartment complexes with role-based access control.",
     version="1.0.0"
+)
+
+# CORS middleware - allow localhost:3000 for development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
