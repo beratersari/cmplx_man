@@ -22,27 +22,27 @@ from app.core.logging_config import logger
 
 class RateLimitConfig:
     """Configuration for rate limiting."""
-    
+
     # Global rate limits (per IP)
-    GLOBAL_REQUESTS_PER_SECOND = 20  # Max requests per second
-    GLOBAL_REQUESTS_PER_MINUTE = 200  # Max requests per minute
-    GLOBAL_REQUESTS_PER_HOUR = 5000  # Max requests per hour
-    
+    GLOBAL_REQUESTS_PER_SECOND = 50  # Max requests per second (increased from 20)
+    GLOBAL_REQUESTS_PER_MINUTE = 500  # Max requests per minute (increased from 200)
+    GLOBAL_REQUESTS_PER_HOUR = 10000  # Max requests per hour (increased from 5000)
+
     # Endpoint-specific limits
-    AUTH_REQUESTS_PER_MINUTE = 10  # Stricter for auth endpoints (login, register)
-    WRITE_REQUESTS_PER_MINUTE = 50  # POST, PUT, DELETE operations
-    READ_REQUESTS_PER_MINUTE = 100  # GET operations
-    
+    AUTH_REQUESTS_PER_MINUTE = 20  # Stricter for auth endpoints (login, register) (increased from 10)
+    WRITE_REQUESTS_PER_MINUTE = 100  # POST, PUT, DELETE operations (increased from 50)
+    READ_REQUESTS_PER_MINUTE = 200  # GET operations (increased from 100)
+
     # Burst protection
-    BURST_SIZE = 10  # Max concurrent requests in burst window
+    BURST_SIZE = 30  # Max concurrent requests in burst window (increased from 10)
     BURST_WINDOW_SECONDS = 1  # Burst window duration
-    
+
     # Block duration
-    BLOCK_DURATION_SECONDS = 300  # 5 minutes block for violating rate limits
-    
+    BLOCK_DURATION_SECONDS = 60  # 1 minute block for violating rate limits (reduced from 5 minutes)
+
     # Request size limits
     MAX_REQUEST_SIZE = 10 * 1024 * 1024  # 10 MB max request body
-    
+
     # Whitelist paths (no rate limiting)
     WHITELIST_PATHS = [
         r"^/$",
@@ -51,7 +51,7 @@ class RateLimitConfig:
         r"^/openapi\.json$",
         r"^/health$",
     ]
-    
+
     # Trusted proxies (can be configured for reverse proxy setups)
     TRUSTED_PROXIES = []  # Add your proxy IPs here
 

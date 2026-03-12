@@ -82,6 +82,7 @@ def admin_update_category(
 
 
 @router.delete("/{category_id}", summary="Delete Issue Category", description="Deletes an issue category. Restricted to Admins or Site Managers assigned to the category's complex.")
+@router.delete("/admin/{category_id}", summary="Admin: Delete Issue Category", description="Deletes an issue category. Restricted to Admins.")
 def delete_category(
     category_id: int,
     db: Session = Depends(get_db),

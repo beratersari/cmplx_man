@@ -1,16 +1,24 @@
 'use client';
 
+interface FilterOption {
+  value: string;
+  label: string;
+}
+
+interface Filter {
+  key: string;
+  label: string;
+  options: FilterOption[];
+  value: string;
+  onChange: (value: string) => void;
+  isDate?: boolean;
+}
+
 interface SearchFilterProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   searchPlaceholder?: string;
-  filters?: {
-    key: string;
-    label: string;
-    options: { value: string; label: string }[];
-    value: string;
-    onChange: (value: string) => void;
-  }[];
+  filters?: Filter[];
 }
 
 const SearchFilter: React.FC<SearchFilterProps> = ({
@@ -47,18 +55,28 @@ const SearchFilter: React.FC<SearchFilterProps> = ({
       </div>
       {filters.map((filter) => (
         <div key={filter.key} className="sm:w-48">
-          <select
-            value={filter.value}
-            onChange={(e) => filter.onChange(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-          >
-            <option value="">{filter.label}</option>
-            {filter.options.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          {filter.isDate ? (
+            <input
+              type="date"
+              value={filter.value}
+              onChange={(e) => filter.onChange(e.target.value)}
+              placeholder={filter.label}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+            />
+          ) : (
+            <select
+              value={filter.value}
+              onChange={(e) => filter.onChange(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+            >
+              <option value="">{filter.label}</option>
+              {filter.options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       ))}
     </div>

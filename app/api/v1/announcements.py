@@ -21,6 +21,7 @@ router = APIRouter()
 
 
 @router.post("/", response_model=AnnouncementOut, summary="Create Announcement")
+@router.post("/admin", response_model=AnnouncementOut, summary="Admin: Create Announcement")
 def create_announcement(
     announcement_in: AnnouncementCreate,
     db: Session = Depends(get_db),

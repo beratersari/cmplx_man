@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import DashboardTemplate from '../../components/templates/DashboardTemplate';
-import DashboardTabs from '../../components/organisms/DashboardTabs';
-import { ComplexManagement, BuildingManagement, UserManagement, AnnouncementManagement } from '../../components/organisms';
+import { ComplexManagement, BuildingManagement, UserManagement, AnnouncementManagement, VisitorManagement, VehicleManagement, IssueCategoryManagement, IssueManagement, ReservationCategoryManagement, ReservationManagement } from '../../components/organisms';
 import { SummaryCard } from '../../components/atoms';
 import { Spinner } from '../../components/atoms';
 import {
@@ -247,13 +246,17 @@ const UserManagementContent = () => <UserManagement />;
 
 const AnnouncementManagementContent = () => <AnnouncementManagement />;
 
-const headerTabs = [
-  { id: 'main', label: 'Main' },
-  { id: 'complexes', label: 'Complex Management' },
-  { id: 'buildings', label: 'Building Management' },
-  { id: 'users', label: 'User Management' },
-  { id: 'announcements', label: 'Announcements' },
-];
+const VisitorManagementContent = () => <VisitorManagement />;
+
+const VehicleManagementContent = () => <VehicleManagement />;
+
+const IssueCategoryManagementContent = () => <IssueCategoryManagement />;
+
+const IssueManagementContent = () => <IssueManagement />;
+
+const ReservationCategoryManagementContent = () => <ReservationCategoryManagement />;
+
+const ReservationManagementContent = () => <ReservationManagement />;
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('main');
@@ -264,19 +267,22 @@ export default function DashboardPage() {
     { id: 'buildings', label: 'Building Management', content: <BuildingManagementContent /> },
     { id: 'users', label: 'User Management', content: <UserManagementContent /> },
     { id: 'announcements', label: 'Announcements', content: <AnnouncementManagementContent /> },
+    { id: 'visitors', label: 'Visitor Registry', content: <VisitorManagementContent /> },
+    { id: 'vehicles', label: 'Vehicles', content: <VehicleManagementContent /> },
+    { id: 'issue-categories', label: 'Issue Categories', content: <IssueCategoryManagementContent /> },
+    { id: 'issues', label: 'Issues', content: <IssueManagementContent /> },
+    { id: 'reservation-categories', label: 'Reservation Categories', content: <ReservationCategoryManagementContent /> },
+    { id: 'reservations', label: 'Reservations', content: <ReservationManagementContent /> },
   ];
+
+  const activeTabContent = dashboardTabs.find(tab => tab.id === activeTab)?.content || dashboardTabs[0].content;
 
   return (
     <DashboardTemplate 
-      tabs={headerTabs} 
       activeTab={activeTab}
       onTabChange={setActiveTab}
     >
-      <DashboardTabs 
-        tabs={dashboardTabs} 
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
+      {activeTabContent}
     </DashboardTemplate>
   );
 }

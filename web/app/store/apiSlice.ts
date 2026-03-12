@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { Complex, ComplexCreate, ComplexUpdate, Building, BuildingCreate, BuildingUpdate, User, AdminComplexAssignment, IssueStatusSummary, VisitorCountByBuilding, VehicleStats, PaymentStatsByBuilding, Announcement, AnnouncementCreate, AnnouncementUpdate, AnnouncementEmotion, Comment } from '../types';
+import { Complex, ComplexCreate, ComplexUpdate, Building, BuildingCreate, BuildingUpdate, User, AdminComplexAssignment, IssueStatusSummary, VisitorCountByBuilding, VehicleStats, PaymentStatsByBuilding, Announcement, AnnouncementCreate, AnnouncementUpdate, AnnouncementEmotion, Comment, Visitor, VisitorCreate, VisitorUpdate, VisitorStatusUpdate, Vehicle, VehicleCreate, VehicleUpdate, Issue, IssueCreate, AdminIssueCreate, IssueUpdate, IssueCategory, IssueCategoryCreate, AdminIssueCategoryCreate, IssueCategoryUpdate, IssueCountByCategory, ReservationCategory, ReservationCategoryCreate, AdminReservationCategoryCreate, ReservationCategoryUpdate, Reservation, ReservationCreate, AdminReservationCreate, ReservationUpdate, ReservationStatusUpdate, ReservationOverlapStats, ReservationOverlapStatsById } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -232,10 +232,307 @@ export const enhancedApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: (_, __, { announcementId }) => [{ type: 'Announcement', id: announcementId }],
     }),
+
+    // Visitor endpoints
+    getVisitors: builder.query<Visitor[], { complexId?: number; visitDate?: string }>({
+      query: ({ complexId, visitDate } = {}) => {
+        if (complexId && visitDate) {
+          return `/visitors/admin/list?complex_id=${complexId}&visit_date=${visitDate}`;
+        } else if (complexId) {
+          return `/visitors/admin/list?complex_id=${complexId}`;
+        }
+        return '/visitors';
+      },
+      providesTags: ['Visitor'],
+    }),
+
+    createVisitor: builder.mutation<Visitor, { name: string; plate_number?: string; complex_id?: number }>({
+      query: (visitor) => ({
+        url: '/visitors',
+        method: 'POST',
+        body: visitor,
+      }),
+      invalidatesTags: ['Visitor'],
+    }),
+
+    updateVisitor: builder.mutation<Visitor, { id: number; data: VisitorUpdate }>({
+      query: ({ id, data }) => ({
+        url: `/visitors/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: 'Visitor', id }, 'Visitor'],
+    }),
+
+    updateVisitorStatus: builder.mutation<Visitor, { id: number; data: VisitorStatusUpdate }>({
+      query: ({ id, data }) => ({
+        url: `/visitors/${id}/status`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: 'Visitor', id }, 'Visitor'],
+    }),
+
+    deleteVisitor: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/visitors/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Visitor'],
+    }),
+
+    // Vehicle endpoints
+    getVehicles: builder.query<Vehicle[], { userId?: number; skip?: number; limit?: number }>({
+      query: ({ userId, skip = 0, limit = 100 } = {}) => {
+        const params = new URLSearchParams({
+          skip: String(skip),
+          limit: String(limit),
+        });
+        if (userId) {
+          params.append('user_id', String(userId));
+        }
+        return `/vehicles?${params.toString()}`;
+      },
+      providesTags: ['Vehicle'],
+    }),
+
+    createVehicle: builder.mutation<Vehicle, VehicleCreate>({
+      query: (vehicle) => ({
+        url: '/vehicles',
+        method: 'POST',
+        body: vehicle,
+      }),
+      invalidatesTags: ['Vehicle'],
+    }),
+
+    updateVehicle: builder.mutation<Vehicle, { id: number; data: VehicleUpdate }>({
+      query: ({ id, data }) => ({
+        url: `/vehicles/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: 'Vehicle', id }, 'Vehicle'],
+    }),
+
+    deleteVehicle: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/vehicles/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Vehicle'],
+    }),
+
+    // Issue Category endpoints
+    getIssueCategories: builder.query<IssueCategory[], { complexId?: number; skip?: number; limit?: number }>({
+      query: ({ complexId, skip = 0, limit = 100 } = {}) => {
+        const params = new URLSearchParams({
+          skip: String(skip),
+          limit: String(limit),
+        });
+        if (complexId) {
+          params.append('complex_id', String(complexId));
+        }
+        return `/issue-categories?${params.toString()}`;
+      },
+      providesTags: ['Issue'],
+    }),
+
+    createIssueCategory: builder.mutation<IssueCategory, IssueCategoryCreate>({
+      query: (category) => ({
+        url: '/issue-categories',
+        method: 'POST',
+        body: category,
+      }),
+      invalidatesTags: ['Issue'],
+    }),
+
+    adminCreateIssueCategory: builder.mutation<IssueCategory, AdminIssueCategoryCreate>({
+      query: (category) => ({
+        url: '/issue-categories/admin',
+        method: 'POST',
+        body: category,
+      }),
+      invalidatesTags: ['Issue'],
+    }),
+
+    adminUpdateIssueCategory: builder.mutation<IssueCategory, { id: number; data: AdminIssueCategoryCreate }>({
+      query: ({ id, data }) => ({
+        url: `/issue-categories/admin/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: 'Issue', id }, 'Issue'],
+    }),
+
+    deleteIssueCategory: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/issue-categories/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Issue'],
+    }),
+
+    // Issue endpoints
+    getIssues: builder.query<Issue[], { complexId?: number; skip?: number; limit?: number }>({
+      query: ({ complexId, skip = 0, limit = 100 } = {}) => {
+        const params = new URLSearchParams({
+          skip: String(skip),
+          limit: String(limit),
+        });
+        if (complexId) {
+          params.append('complex_id', String(complexId));
+        }
+        return `/issues?${params.toString()}`;
+      },
+      providesTags: ['Issue'],
+    }),
+
+    adminCreateIssue: builder.mutation<Issue, AdminIssueCreate>({
+      query: (issue) => ({
+        url: '/issues/admin',
+        method: 'POST',
+        body: issue,
+      }),
+      invalidatesTags: ['Issue'],
+    }),
+
+    updateIssue: builder.mutation<Issue, { id: number; data: IssueUpdate }>({
+      query: ({ id, data }) => ({
+        url: `/issues/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: 'Issue', id }, 'Issue'],
+    }),
+
+    deleteIssue: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/issues/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Issue'],
+    }),
+
+    getIssueCountsByCategory: builder.query<IssueCountByCategory[], number>({
+      query: (complexId) => `/issues/stats/by-category/admin?complex_id=${complexId}`,
+      providesTags: ['Issue'],
+    }),
+
+    // Reservation Category endpoints
+    getReservationCategories: builder.query<ReservationCategory[], { complexId?: number; skip?: number; limit?: number }>({
+      query: ({ complexId, skip = 0, limit = 100 } = {}) => {
+        const params = new URLSearchParams({
+          skip: String(skip),
+          limit: String(limit),
+        });
+        if (complexId) {
+          params.append('complex_id', String(complexId));
+        }
+        return `/reservation-categories?${params.toString()}`;
+      },
+      providesTags: ['Reservation'],
+    }),
+
+    createReservationCategory: builder.mutation<ReservationCategory, ReservationCategoryCreate>({
+      query: (category) => ({
+        url: '/reservation-categories',
+        method: 'POST',
+        body: category,
+      }),
+      invalidatesTags: ['Reservation'],
+    }),
+
+    adminCreateReservationCategory: builder.mutation<ReservationCategory, AdminReservationCategoryCreate>({
+      query: (category) => ({
+        url: '/reservation-categories/admin',
+        method: 'POST',
+        body: category,
+      }),
+      invalidatesTags: ['Reservation'],
+    }),
+
+    adminUpdateReservationCategory: builder.mutation<ReservationCategory, { id: number; data: AdminReservationCategoryCreate }>({
+      query: ({ id, data }) => ({
+        url: `/reservation-categories/admin/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: 'Reservation', id }, 'Reservation'],
+    }),
+
+    deleteReservationCategory: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/reservation-categories/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Reservation'],
+    }),
+
+    // Reservation endpoints
+    getReservations: builder.query<Reservation[], { complexId?: number; date?: string; status?: string; skip?: number; limit?: number }>({
+      query: ({ complexId, date, status, skip = 0, limit = 100 } = {}) => {
+        const params = new URLSearchParams({
+          skip: String(skip),
+          limit: String(limit),
+        });
+        if (complexId) {
+          params.append('complex_id', String(complexId));
+        }
+        if (date) {
+          params.append('date', date);
+        }
+        if (status) {
+          params.append('status', status);
+        }
+        return `/reservations?${params.toString()}`;
+      },
+      providesTags: ['Reservation'],
+    }),
+
+    adminCreateReservation: builder.mutation<Reservation, AdminReservationCreate>({
+      query: (reservation) => ({
+        url: '/reservations/admin',
+        method: 'POST',
+        body: reservation,
+      }),
+      invalidatesTags: ['Reservation'],
+    }),
+
+    updateReservation: builder.mutation<Reservation, { id: number; data: ReservationUpdate }>({
+      query: ({ id, data }) => ({
+        url: `/reservations/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: 'Reservation', id }, 'Reservation'],
+    }),
+
+    updateReservationStatus: builder.mutation<Reservation, { id: number; data: ReservationStatusUpdate }>({
+      query: ({ id, data }) => ({
+        url: `/reservations/${id}/status`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: 'Reservation', id }, 'Reservation'],
+    }),
+
+    deleteReservation: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/reservations/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Reservation'],
+    }),
+
+    getReservationOverlapStats: builder.query<ReservationOverlapStats, { categoryId: number; date: string; startHour: string; endHour: string }>({
+      query: ({ categoryId, date, startHour, endHour }) =>
+        `/reservations/overlap-stats?category_id=${categoryId}&date=${date}&start_hour=${startHour}&end_hour=${endHour}`,
+      providesTags: ['Reservation'],
+    }),
   }),
 });
 
-export const { 
+export const {
   useLoginMutation,
   useGetComplexesQuery,
   useGetIssueStatusSummaryQuery,
@@ -262,4 +559,34 @@ export const {
   useAddAnnouncementEmotionMutation,
   useGetAnnouncementCommentsQuery,
   useAddAnnouncementCommentMutation,
+  useGetVisitorsQuery,
+  useCreateVisitorMutation,
+  useUpdateVisitorMutation,
+  useUpdateVisitorStatusMutation,
+  useDeleteVisitorMutation,
+  useGetVehiclesQuery,
+  useCreateVehicleMutation,
+  useUpdateVehicleMutation,
+  useDeleteVehicleMutation,
+  useGetIssueCategoriesQuery,
+  useCreateIssueCategoryMutation,
+  useAdminCreateIssueCategoryMutation,
+  useAdminUpdateIssueCategoryMutation,
+  useDeleteIssueCategoryMutation,
+  useGetIssuesQuery,
+  useAdminCreateIssueMutation,
+  useUpdateIssueMutation,
+  useDeleteIssueMutation,
+  useGetIssueCountsByCategoryQuery,
+  useGetReservationCategoriesQuery,
+  useCreateReservationCategoryMutation,
+  useAdminCreateReservationCategoryMutation,
+  useAdminUpdateReservationCategoryMutation,
+  useDeleteReservationCategoryMutation,
+  useGetReservationsQuery,
+  useAdminCreateReservationMutation,
+  useUpdateReservationMutation,
+  useUpdateReservationStatusMutation,
+  useDeleteReservationMutation,
+  useGetReservationOverlapStatsQuery,
 } = enhancedApi;

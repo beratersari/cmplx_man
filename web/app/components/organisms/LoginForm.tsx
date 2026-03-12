@@ -49,6 +49,10 @@ const LoginForm = () => {
       setApiError(null);
       const result = await login(data).unwrap();
       setAuth(result.access_token);
+      // Store username for header display
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('username', data.username);
+      }
       router.push('/dashboard');
     } catch (error: any) {
       setApiError(error?.data?.detail || 'An error occurred during login. Please try again.');

@@ -281,7 +281,8 @@ class VisitorBase(BaseModel):
     plate_number: Optional[str] = Field(None, min_length=3, max_length=20)
 
 class VisitorCreate(VisitorBase):
-    pass
+    """Schema for creating a visitor. Admin can specify complex_id."""
+    complex_id: Optional[int] = Field(None, gt=0, description="Optional: ID of the complex for this visitor (admin only)")
 
 class VisitorOut(VisitorBase):
     id: int

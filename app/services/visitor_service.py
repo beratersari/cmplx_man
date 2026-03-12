@@ -21,8 +21,19 @@ class VisitorService:
 
     def create_visitor(self, visitor_in: VisitorCreate, current_user: UserModel) -> VisitorModel:
         """Register a visitor for the user's complex."""
-        complex_id = self._get_user_complex_id(current_user)
-        building_id = self._get_user_building_id(current_user)
+        # If admin provides a complex_id, use it; otherwise use the user's assigned complex
+        if visitor_in.complex_id is not None and current_user.role == UserRole.ADMIN:
+            complex_id = visitor_in.complex_id
+            # Verify the complex exists
+            complex_obj = self.complex_repo.get_by_id(complex_id)
+            if not complex_obj:
+                raise HTTPException(status_code=404, detail="Complex not found")
+            building_id = 0
+            logger.info(f"Admin creating visitor for complex {complex_id}")
+        else:
+            complex_id = self._get_user_complex_id(current_user)
+            building_id = self._get_user_building_id(current_user)
+
         visit_data = {
             "name": visitor_in.name,
             "plate_number": visitor_in.plate_number,
