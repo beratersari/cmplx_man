@@ -12,3 +12,4 @@ ENV/
 .idea/
 apartment_management.db
 app.log
+**.log
