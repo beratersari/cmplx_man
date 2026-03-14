@@ -1,98 +1,250 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useTranslation } from '../../locales';
+import { Text } from '../../components/atoms/Text';
+import { useGetAnnouncementsQuery, useGetCurrentUserQuery } from '../../store/apiSlice';
+import { useAuth } from '../../hooks/useAuth';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const ANNOUNCEMENTS_LIMIT = 4;
 
-export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+const HomeScreen = () => {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+  const [skip, setSkip] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const { data: user } = useGetCurrentUserQuery(undefined, { skip: !isAuthenticated });
+  const { data: announcements = [], isFetching, refetch } = useGetAnnouncementsQuery(
+    { skip, limit: ANNOUNCEMENTS_LIMIT },
+    { skip: !isAuthenticated }
   );
-}
+
+  const handleLoadMore = useCallback(() => {
+    if (!isFetching && hasMore) {
+      if (announcements.length < ANNOUNCEMENTS_LIMIT) {
+        setHasMore(false);
+      } else {
+        setSkip(prev => prev + ANNOUNCEMENTS_LIMIT);
+      }
+    }
+  }, [isFetching, hasMore, announcements.length]);
+
+  const handleRefresh = useCallback(() => {
+    setSkip(0);
+    setHasMore(true);
+    refetch();
+  }, [refetch]);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* User Info Section */}
+        <View style={styles.header}>
+          <Text style={styles.title}>{t('dashboard.title')}</Text>
+          {user && (
+            <View style={styles.userInfo}>
+              <Text style={styles.welcomeText}>
+                {t('dashboard.welcome')}, {user.first_name || user.username}
+              </Text>
+              {user.email && (
+                <Text style={styles.userDetail}>{user.email}</Text>
+              )}
+              {user.complex_name && (
+                <Text style={styles.userDetail}>{user.complex_name}</Text>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Announcements Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('dashboard.recentAnnouncements')}</Text>
+            <TouchableOpacity onPress={handleRefresh}>
+              <Text style={styles.refreshText}>{t('common.refresh')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {announcements.length === 0 && !isFetching ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>{t('announcements.noAnnouncementsFound')}</Text>
+            </View>
+          ) : (
+            announcements.map((announcement: any) => (
+              <TouchableOpacity
+                key={announcement.id}
+                style={styles.announcementCard}
+                onPress={() => router.push(`/(tabs)/announcements/${announcement.id}`)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.announcementTitle}>{announcement.title}</Text>
+                <Text style={styles.announcementDate}>
+                  {announcement.created_at
+                    ? new Date(announcement.created_at).toLocaleDateString()
+                    : ''}
+                </Text>
+                <Text style={styles.announcementContent} numberOfLines={2}>
+                  {announcement.content?.replace(/<[^>]+>/g, '') || ''}
+                </Text>
+              </TouchableOpacity>
+            ))
+          )}
+
+          {isFetching && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#3b82f6" />
+            </View>
+          )}
+
+          {hasMore && announcements.length > 0 && !isFetching && (
+            <TouchableOpacity style={styles.loadMoreButton} onPress={handleLoadMore}>
+              <Text style={styles.loadMoreText}>{t('common.loadMore')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('dashboard.quickActions')}</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardText}>{t('dashboard.pendingIssues')}</Text>
+            <Text style={styles.cardText}>{t('dashboard.upcomingReservations')}</Text>
+            <Text style={styles.cardText}>{t('dashboard.recentAnnouncements')}</Text>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  header: {
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  userInfo: {
+    marginTop: 12,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  welcomeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  userDetail: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 2,
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 12,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  refreshText: {
+    fontSize: 14,
+    color: '#3b82f6',
+  },
+  announcementCard: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  announcementTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  announcementDate: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginBottom: 6,
+  },
+  announcementContent: {
+    fontSize: 13,
+    color: '#6b7280',
+    lineHeight: 18,
+  },
+  emptyState: {
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#9ca3af',
+  },
+  loadingContainer: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  loadMoreButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  loadMoreText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#3b82f6',
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  cardText: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 6,
   },
 });
+
+export default HomeScreen;
+
