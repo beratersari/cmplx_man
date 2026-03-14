@@ -16,8 +16,10 @@ import {
   useDeleteReservationMutation,
 } from '../../store/apiSlice';
 import { Reservation, Complex, ReservationCategory, User, ReservationStatus } from '../../types';
+import { useTranslation } from '../../locales';
 
 const ReservationManagement: React.FC = () => {
+  const { t } = useTranslation();
   // State
   const [searchTerm, setSearchTerm] = useState('');
   const [complexFilter, setComplexFilter] = useState('');
@@ -132,7 +134,7 @@ const ReservationManagement: React.FC = () => {
       setSelectedReservation(null);
       refetch();
     } catch (err: any) {
-      setDeleteError(err?.data?.detail || 'Failed to delete reservation');
+      setDeleteError(err?.data?.detail || t('reservations.deleteError') || 'Failed to delete reservation');
     }
   };
 
@@ -166,27 +168,27 @@ const ReservationManagement: React.FC = () => {
     },
     {
       key: 'user',
-      header: 'User',
+      header: t('reservations.form.user'),
       render: (reservation) => {
         const user = userMap.get(reservation.user_id);
         return (
-          <span className="font-medium text-gray-900">{user?.username || `User ${reservation.user_id}`}</span>
+          <span className="font-medium text-gray-900">{user?.username || `${t('users.user')} ${reservation.user_id}`}</span>
         );
       },
     },
     {
       key: 'category',
-      header: 'Category',
+      header: t('reservations.form.category'),
       render: (reservation) => {
         const category = categoryMap.get(reservation.category_id);
         return (
-          <span className="text-gray-600">{category?.name || `Category ${reservation.category_id}`}</span>
+          <span className="text-gray-600">{category?.name || `${t('reservations.form.category')} ${reservation.category_id}`}</span>
         );
       },
     },
     {
       key: 'date_time',
-      header: 'Date & Time',
+      header: t('reservations.dateTime'),
       render: (reservation) => (
         <div className="text-sm">
           <div className="text-gray-900">{formatDate(reservation.reservation_date)}</div>
@@ -196,37 +198,37 @@ const ReservationManagement: React.FC = () => {
     },
     {
       key: 'people',
-      header: 'People',
+      header: t('reservations.people'),
       render: (reservation) => (
         <span className="text-gray-600">{reservation.person_count}</span>
       ),
     },
     {
       key: 'complex',
-      header: 'Complex',
+      header: t('common.complex') || 'Complex',
       render: (reservation) => {
         const complex = complexes?.find(c => c.id === reservation.complex_id);
         return (
-          <span className="text-gray-600">{complex?.name || `Complex ${reservation.complex_id}`}</span>
+          <span className="text-gray-600">{complex?.name || `${t('common.complex') || 'Complex'} ${reservation.complex_id}`}</span>
         );
       },
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('common.status'),
       render: (reservation) => (
         <span
           className={`px-2 py-1 text-xs font-medium rounded-full ${
             statusColors[reservation.status as ReservationStatus]
           }`}
         >
-          {reservation.status}
+          {t(`reservations.status.${reservation.status}`) || reservation.status}
         </span>
       ),
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('common.actions'),
       className: 'w-48',
       render: (reservation) => (
         <div className="flex items-center gap-2 flex-wrap">
@@ -239,7 +241,7 @@ const ReservationManagement: React.FC = () => {
                 }}
                 className="text-green-600 hover:text-green-800 text-xs font-medium px-2 py-1 bg-green-50 rounded"
               >
-                Accept
+                {t('reservations.accept')}
               </button>
               <button
                 onClick={(e) => {
@@ -248,7 +250,7 @@ const ReservationManagement: React.FC = () => {
                 }}
                 className="text-red-600 hover:text-red-800 text-xs font-medium px-2 py-1 bg-red-50 rounded"
               >
-                Reject
+                {t('reservations.reject')}
               </button>
             </>
           )}
@@ -259,7 +261,7 @@ const ReservationManagement: React.FC = () => {
             }}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
-            Edit
+            {t('common.edit')}
           </button>
           <button
             onClick={(e) => {
@@ -268,7 +270,7 @@ const ReservationManagement: React.FC = () => {
             }}
             className="text-red-600 hover:text-red-800 text-sm font-medium"
           >
-            Delete
+            {t('common.delete')}
           </button>
         </div>
       ),
@@ -282,9 +284,9 @@ const ReservationManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Reservation Management</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('reservations.title')}</h2>
           <p className="text-gray-600 mt-1">
-            Manage facility reservations from residents
+            {t('reservations.subtitle')}
           </p>
         </div>
         <Button
@@ -294,7 +296,7 @@ const ReservationManagement: React.FC = () => {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          New Reservation
+          {t('reservations.newReservation')}
         </Button>
       </div>
 
@@ -305,11 +307,11 @@ const ReservationManagement: React.FC = () => {
           setSearchTerm(value);
           setCurrentPage(1);
         }}
-        searchPlaceholder="Search reservations by user or notes..."
+        searchPlaceholder={t('reservations.searchPlaceholder')}
         filters={[
           {
             key: 'complex',
-            label: 'All Complexes',
+            label: t('payments.allComplexes'),
             value: complexFilter,
             onChange: (value) => {
               setComplexFilter(value);
@@ -319,16 +321,16 @@ const ReservationManagement: React.FC = () => {
           },
           {
             key: 'status',
-            label: 'All Statuses',
+            label: t('issues.allStatuses'),
             value: statusFilter,
             onChange: (value) => {
               setStatusFilter(value);
               setCurrentPage(1);
             },
             options: [
-              { value: 'PENDING', label: 'Pending' },
-              { value: 'ACCEPTED', label: 'Accepted' },
-              { value: 'REJECTED', label: 'Rejected' },
+              { value: 'PENDING', label: t('reservations.status.PENDING') },
+              { value: 'ACCEPTED', label: t('reservations.status.ACCEPTED') },
+              { value: 'REJECTED', label: t('reservations.status.REJECTED') },
             ],
           },
         ]}
@@ -337,15 +339,15 @@ const ReservationManagement: React.FC = () => {
       {/* Active Filters Display */}
       {(complexFilter || statusFilter) && (
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-gray-500">Active filters:</span>
+          <span className="text-gray-500">{t('common.activeFilter')}:</span>
           {complexFilter && selectedComplex && (
             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-              Complex: {selectedComplex.name}
+              {t('common.complex') || 'Complex'}: {selectedComplex.name}
             </span>
           )}
           {statusFilter && (
             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-              Status: {statusFilter}
+              {t('common.status')}: {t(`reservations.status.${statusFilter}`) || statusFilter}
             </span>
           )}
           <button
@@ -355,7 +357,7 @@ const ReservationManagement: React.FC = () => {
             }}
             className="text-blue-600 hover:text-blue-800 text-xs underline"
           >
-            Clear all
+            {t('common.clear')}
           </button>
         </div>
       )}
@@ -371,7 +373,7 @@ const ReservationManagement: React.FC = () => {
             columns={columns}
             data={paginatedData}
             keyExtractor={(reservation) => reservation.id}
-            emptyMessage="No reservations found"
+            emptyMessage={t('reservations.noReservationsFound')}
           />
           <Pagination
             currentPage={currentPage}
@@ -390,7 +392,7 @@ const ReservationManagement: React.FC = () => {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Create New Reservation"
+        title={t('reservations.form.createReservation')}
         size="lg"
       >
         <ReservationForm
@@ -410,7 +412,7 @@ const ReservationManagement: React.FC = () => {
           setIsEditModalOpen(false);
           setSelectedReservation(null);
         }}
-        title="Edit Reservation"
+        title={t('reservations.editReservation')}
         size="md"
       >
         <ReservationForm
@@ -436,18 +438,18 @@ const ReservationManagement: React.FC = () => {
           setSelectedReservation(null);
           setDeleteError(null);
         }}
-        title="Delete Reservation"
+        title={t('reservations.deleteReservation')}
         size="sm"
       >
         <div className="space-y-4">
           {deleteError && (
-            <Alert variant="error" title="Error">
+            <Alert variant="error" title={t('common.error')}>
               {deleteError}
             </Alert>
           )}
           <p className="text-gray-600">
-            Are you sure you want to delete reservation <strong>#{selectedReservation?.id}</strong>?
-            This action cannot be undone.
+            {t('reservations.deleteConfirmMessage') || 'Are you sure you want to delete reservation'} <strong>#{selectedReservation?.id}</strong>?
+            {t('complexes.deleteConfirmNote')}
           </p>
           <div className="flex justify-end gap-3">
             <Button
@@ -459,14 +461,14 @@ const ReservationManagement: React.FC = () => {
               }}
               disabled={isDeleting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="danger"
               onClick={handleDelete}
               isLoading={isDeleting}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         </div>

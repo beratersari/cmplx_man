@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from '../../locales';
+
 interface PaginationProps {
   currentPage: number;
   totalItems: number;
@@ -17,6 +19,7 @@ const Pagination: React.FC<PaginationProps> = ({
   onPageSizeChange,
   pageSizeOptions = [10, 25, 50, 100],
 }) => {
+  const { t } = useTranslation();
   const totalPages = Math.ceil(totalItems / pageSize);
   const startItem = (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
@@ -62,11 +65,11 @@ const Pagination: React.FC<PaginationProps> = ({
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-white border-t border-gray-200">
       <div className="flex items-center gap-2 text-sm text-gray-600">
         <span>
-          Showing {startItem} to {endItem} of {totalItems} results
+          {t('pagination.showing')} {startItem} {t('pagination.to')} {endItem} {t('pagination.of')} {totalItems} {t('pagination.results')}
         </span>
         {onPageSizeChange && (
           <div className="flex items-center gap-2 ml-4">
-            <span>per page:</span>
+            <span>{t('pagination.perPage')}</span>
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
@@ -88,7 +91,7 @@ const Pagination: React.FC<PaginationProps> = ({
           disabled={currentPage === 1}
           className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Previous
+          {t('pagination.previous')}
         </button>
 
         {getPageNumbers().map((page, index) => (
@@ -113,7 +116,7 @@ const Pagination: React.FC<PaginationProps> = ({
           disabled={currentPage === totalPages}
           className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Next
+          {t('pagination.next')}
         </button>
       </nav>
     </div>

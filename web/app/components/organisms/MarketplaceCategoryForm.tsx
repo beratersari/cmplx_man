@@ -5,39 +5,41 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Alert } from '../atoms';
 import { FormField } from '../molecules';
-import { Building, Complex } from '../../types';
+import { MarketplaceCategory, Complex } from '../../types';
 import { useState, useEffect } from 'react';
 import { useTranslation } from '../../locales';
 
-const buildingSchema = (t: any) => z.object({
+const categorySchema = (t: any) => z.object({
   name: z
     .string()
-    .min(2, t('buildings.form.nameMinLength') || 'Name must be at least 2 characters')
-    .max(100, t('buildings.form.nameMaxLength') || 'Name must be less than 100 characters'),
+    .min(1, t('marketplace.categories.form.nameRequired') || 'Name is required')
+    .max(100, t('marketplace.categories.form.nameMaxLength') || 'Name must be less than 100 characters'),
   complexId: z
     .string()
-    .min(1, t('buildings.form.complexRequired') || 'Please select a complex'),
+    .min(1, t('marketplace.categories.form.complexRequired') || 'Please select a complex'),
 });
 
-type BuildingFormData = {
+type CategoryFormData = {
   name: string;
   complexId: string;
 };
 
-interface BuildingFormProps {
+interface MarketplaceCategoryFormProps {
   complexes: Complex[];
-  initialData?: Building | null;
+  initialData?: MarketplaceCategory | null;
   onSubmit: (data: { name: string; complex_id: number }) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
+  isEdit?: boolean;
 }
 
-const BuildingForm: React.FC<BuildingFormProps> = ({
+const MarketplaceCategoryForm: React.FC<MarketplaceCategoryFormProps> = ({
   complexes,
   initialData,
   onSubmit,
   onCancel,
   isLoading = false,
+  isEdit = false,
 }) => {
   const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
@@ -47,8 +49,8 @@ const BuildingForm: React.FC<BuildingFormProps> = ({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<BuildingFormData>({
-    resolver: zodResolver(buildingSchema(t)),
+  } = useForm<CategoryFormData>({
+    resolver: zodResolver(categorySchema(t)),
     defaultValues: {
       name: initialData?.name || '',
       complexId: initialData?.complex_id?.toString() || '',
@@ -64,7 +66,7 @@ const BuildingForm: React.FC<BuildingFormProps> = ({
     }
   }, [initialData, reset]);
 
-  const handleFormSubmit = async (data: BuildingFormData) => {
+  const handleFormSubmit = async (data: CategoryFormData) => {
     try {
       setError(null);
       await onSubmit({
@@ -85,9 +87,9 @@ const BuildingForm: React.FC<BuildingFormProps> = ({
       )}
 
       <FormField
-        label={t('buildings.form.name')}
+        label={t('marketplace.categories.form.categoryName')}
         type="text"
-        placeholder={t('buildings.form.namePlaceholder')}
+        placeholder={t('marketplace.categories.form.categoryNamePlaceholder')}
         error={errors.name?.message}
         required
         {...register('name')}
@@ -95,7 +97,7 @@ const BuildingForm: React.FC<BuildingFormProps> = ({
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          {t('buildings.form.complex')}
+          {t('common.complex') || 'Complex'}
           <span className="text-red-500 ml-1">*</span>
         </label>
         <select
@@ -104,7 +106,7 @@ const BuildingForm: React.FC<BuildingFormProps> = ({
             errors.complexId ? 'border-red-500' : 'border-gray-300'
           }`}
         >
-          <option value="">{t('buildings.form.selectComplex')}</option>
+          <option value="">{t('payments.form.selectComplex')}</option>
           {complexes.map((complex) => (
             <option key={complex.id} value={complex.id}>
               {complex.name}
@@ -132,11 +134,11 @@ const BuildingForm: React.FC<BuildingFormProps> = ({
           variant="primary"
           isLoading={isLoading || isSubmitting}
         >
-          {initialData ? t('buildings.form.updateBuilding') : t('buildings.form.createBuilding')}
+          {isEdit ? t('marketplace.categories.form.updateCategory') : t('marketplace.categories.form.createCategory')}
         </Button>
       </div>
     </form>
   );
 };
 
-export default BuildingForm;
+export default MarketplaceCategoryForm;

@@ -14,8 +14,10 @@ import {
   useDeleteComplexMutation,
 } from '../../store/apiSlice';
 import { Complex } from '../../types';
+import { useTranslation } from '../../locales';
 
 const ComplexManagement: React.FC = () => {
+  const { t } = useTranslation();
   // State
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,7 +77,7 @@ const ComplexManagement: React.FC = () => {
       setSelectedComplex(null);
       refetch();
     } catch (err: any) {
-      setDeleteError(err?.data?.detail || 'Failed to delete complex');
+      setDeleteError(err?.data?.detail || t('complexes.deleteError') || 'Failed to delete complex');
     }
   };
 
@@ -109,21 +111,21 @@ const ComplexManagement: React.FC = () => {
     },
     {
       key: 'name',
-      header: 'Name',
+      header: t('common.name'),
       render: (complex) => (
         <span className="font-medium text-gray-900">{complex.name}</span>
       ),
     },
     {
       key: 'address',
-      header: 'Address',
+      header: t('common.address'),
       render: (complex) => (
         <span className="text-gray-600">{complex.address}</span>
       ),
     },
     {
       key: 'created_date',
-      header: 'Created',
+      header: t('common.created'),
       render: (complex) => (
         <span className="text-gray-500">
           {new Date(complex.created_date).toLocaleDateString()}
@@ -132,7 +134,7 @@ const ComplexManagement: React.FC = () => {
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('common.actions'),
       className: 'w-48',
       render: (complex) => (
         <div className="flex items-center gap-2">
@@ -143,7 +145,7 @@ const ComplexManagement: React.FC = () => {
             }}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
-            View
+            {t('common.view')}
           </button>
           <button
             onClick={(e) => {
@@ -152,7 +154,7 @@ const ComplexManagement: React.FC = () => {
             }}
             className="text-green-600 hover:text-green-800 text-sm font-medium"
           >
-            Edit
+            {t('common.edit')}
           </button>
           <button
             onClick={(e) => {
@@ -161,7 +163,7 @@ const ComplexManagement: React.FC = () => {
             }}
             className="text-purple-600 hover:text-purple-800 text-sm font-medium"
           >
-            Assign
+            {t('common.assign')}
           </button>
           <button
             onClick={(e) => {
@@ -170,7 +172,7 @@ const ComplexManagement: React.FC = () => {
             }}
             className="text-red-600 hover:text-red-800 text-sm font-medium"
           >
-            Delete
+            {t('common.delete')}
           </button>
         </div>
       ),
@@ -182,9 +184,9 @@ const ComplexManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Complex Management</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('complexes.title')}</h2>
           <p className="text-gray-600 mt-1">
-            Manage residential complexes and their assignments
+            {t('complexes.subtitle')}
           </p>
         </div>
         <Button
@@ -194,7 +196,7 @@ const ComplexManagement: React.FC = () => {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          New Complex
+          {t('complexes.newComplex')}
         </Button>
       </div>
 
@@ -205,7 +207,7 @@ const ComplexManagement: React.FC = () => {
           setSearchTerm(value);
           setCurrentPage(1);
         }}
-        searchPlaceholder="Search complexes by name or address..."
+        searchPlaceholder={t('complexes.searchPlaceholder')}
       />
 
       {/* Table */}
@@ -219,7 +221,7 @@ const ComplexManagement: React.FC = () => {
             columns={columns}
             data={paginatedData}
             keyExtractor={(complex) => complex.id}
-            emptyMessage="No complexes found"
+            emptyMessage={t('complexes.noComplexesFound')}
           />
           <Pagination
             currentPage={currentPage}
@@ -238,7 +240,7 @@ const ComplexManagement: React.FC = () => {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Create New Complex"
+        title={t('complexes.createComplex')}
         size="md"
       >
         <ComplexForm
@@ -255,7 +257,7 @@ const ComplexManagement: React.FC = () => {
           setIsEditModalOpen(false);
           setSelectedComplex(null);
         }}
-        title="Edit Complex"
+        title={t('complexes.editComplex')}
         size="md"
       >
         <ComplexForm
@@ -300,18 +302,18 @@ const ComplexManagement: React.FC = () => {
           setSelectedComplex(null);
           setDeleteError(null);
         }}
-        title="Delete Complex"
+        title={t('complexes.deleteComplex')}
         size="sm"
       >
         <div className="space-y-4">
           {deleteError && (
-            <Alert variant="error" title="Error">
+            <Alert variant="error" title={t('common.error')}>
               {deleteError}
             </Alert>
           )}
           <p className="text-gray-600">
-            Are you sure you want to delete <strong>{selectedComplex?.name}</strong>?
-            This action cannot be undone.
+            {t('complexes.deleteConfirmMessage')} <strong>{selectedComplex?.name}</strong>?
+            {t('complexes.deleteConfirmNote')}
           </p>
           <div className="flex justify-end gap-3">
             <Button
@@ -323,14 +325,14 @@ const ComplexManagement: React.FC = () => {
               }}
               disabled={isDeleting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="danger"
               onClick={handleDelete}
               isLoading={isDeleting}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         </div>

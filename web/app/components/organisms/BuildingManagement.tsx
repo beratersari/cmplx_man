@@ -15,12 +15,14 @@ import {
   useGetUsersQuery,
 } from '../../store/apiSlice';
 import { Building, Complex, User } from '../../types';
+import { useTranslation } from '../../locales';
 
 interface BuildingWithComplex extends Building {
   complex?: Complex;
 }
 
 const BuildingManagement: React.FC = () => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -86,7 +88,7 @@ const BuildingManagement: React.FC = () => {
       setIsCreateModalOpen(false);
       refetch();
     } catch (err: any) {
-      setError(err?.data?.detail || 'Failed to create building');
+      setError(err?.data?.detail || t('buildings.createError') || 'Failed to create building');
     }
   };
 
@@ -99,7 +101,7 @@ const BuildingManagement: React.FC = () => {
       setSelectedBuilding(null);
       refetch();
     } catch (err: any) {
-      setError(err?.data?.detail || 'Failed to update building');
+      setError(err?.data?.detail || t('buildings.updateError') || 'Failed to update building');
     }
   };
 
@@ -112,7 +114,7 @@ const BuildingManagement: React.FC = () => {
       setSelectedBuilding(null);
       refetch();
     } catch (err: any) {
-      setDeleteError(err?.data?.detail || 'Failed to delete building');
+      setDeleteError(err?.data?.detail || t('buildings.deleteError') || 'Failed to delete building');
     }
   };
 
@@ -149,24 +151,24 @@ const BuildingManagement: React.FC = () => {
     },
     {
       key: 'name',
-      header: 'Building Name',
+      header: t('buildings.buildingName'),
       render: (building) => (
         <span className="font-medium text-gray-900">{building.name}</span>
       ),
     },
     {
       key: 'complex',
-      header: 'Complex',
+      header: t('common.complex') || 'Complex',
       render: (building) => (
         <div>
-          <div className="text-gray-900">{building.complex?.name || 'Unknown'}</div>
+          <div className="text-gray-900">{building.complex?.name || t('common.unknown') || 'Unknown'}</div>
           <div className="text-sm text-gray-500">{building.complex?.address}</div>
         </div>
       ),
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('common.status'),
       render: (building) => {
         const isActive = building.complex?.is_active ?? true;
         return (
@@ -177,14 +179,14 @@ const BuildingManagement: React.FC = () => {
                 : 'bg-gray-100 text-gray-800'
             }`}
           >
-            {isActive ? 'Active' : 'Inactive'}
+            {isActive ? t('buildings.active') : t('buildings.inactive')}
           </span>
         );
       },
     },
     {
       key: 'created_date',
-      header: 'Created',
+      header: t('common.created'),
       render: (building) => (
         <span className="text-gray-500">
           {new Date(building.created_date).toLocaleDateString()}
@@ -193,7 +195,7 @@ const BuildingManagement: React.FC = () => {
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('common.actions'),
       className: 'w-48',
       render: (building) => (
         <div className="flex items-center gap-2">
@@ -204,7 +206,7 @@ const BuildingManagement: React.FC = () => {
             }}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
-            View
+            {t('common.view')}
           </button>
           <button
             onClick={(e) => {
@@ -213,7 +215,7 @@ const BuildingManagement: React.FC = () => {
             }}
             className="text-green-600 hover:text-green-800 text-sm font-medium"
           >
-            Edit
+            {t('common.edit')}
           </button>
           <button
             onClick={(e) => {
@@ -222,7 +224,7 @@ const BuildingManagement: React.FC = () => {
             }}
             className="text-red-600 hover:text-red-800 text-sm font-medium"
           >
-            Delete
+            {t('common.delete')}
           </button>
         </div>
       ),
@@ -235,9 +237,9 @@ const BuildingManagement: React.FC = () => {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Building Management</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('buildings.title')}</h2>
           <p className="text-gray-600 mt-1">
-            Manage buildings across all complexes
+            {t('buildings.subtitle')}
           </p>
         </div>
         <Button
@@ -247,7 +249,7 @@ const BuildingManagement: React.FC = () => {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Create Building
+          {t('buildings.createBuilding')}
         </Button>
       </div>
 
@@ -257,19 +259,19 @@ const BuildingManagement: React.FC = () => {
           setSearchTerm(value);
           setCurrentPage(1);
         }}
-        searchPlaceholder="Search buildings or complexes..."
+        searchPlaceholder={t('buildings.searchPlaceholder')}
         filters={[
           {
             key: 'status',
-            label: 'All Statuses',
+            label: t('buildings.allStatuses'),
             value: statusFilter,
             onChange: (value) => {
               setStatusFilter(value);
               setCurrentPage(1);
             },
             options: [
-              { value: 'active', label: 'Active' },
-              { value: 'inactive', label: 'Inactive' },
+              { value: 'active', label: t('buildings.active') },
+              { value: 'inactive', label: t('buildings.inactive') },
             ],
           },
         ]}
@@ -285,7 +287,7 @@ const BuildingManagement: React.FC = () => {
             columns={columns}
             data={paginatedData}
             keyExtractor={(building) => building.id}
-            emptyMessage="No buildings found"
+            emptyMessage={t('buildings.noBuildingsFound')}
           />
           <Pagination
             currentPage={currentPage}
@@ -306,11 +308,11 @@ const BuildingManagement: React.FC = () => {
           setIsCreateModalOpen(false);
           setError(null);
         }}
-        title="Create New Building"
+        title={t('buildings.createNewBuilding') || t('buildings.createBuilding')}
         size="md"
       >
         {error && (
-          <Alert variant="error" title="Error">
+          <Alert variant="error" title={t('common.error')}>
             {error}
           </Alert>
         )}
@@ -338,11 +340,11 @@ const BuildingManagement: React.FC = () => {
           setSelectedBuilding(null);
           setError(null);
         }}
-        title="Edit Building"
+        title={t('buildings.editBuilding')}
         size="md"
       >
         {error && (
-          <Alert variant="error" title="Error">
+          <Alert variant="error" title={t('common.error')}>
             {error}
           </Alert>
         )}
@@ -385,18 +387,18 @@ const BuildingManagement: React.FC = () => {
           setSelectedBuilding(null);
           setDeleteError(null);
         }}
-        title="Delete Building"
+        title={t('buildings.deleteBuilding')}
         size="sm"
       >
         <div className="space-y-4">
           {deleteError && (
-            <Alert variant="error" title="Error">
+            <Alert variant="error" title={t('common.error')}>
               {deleteError}
             </Alert>
           )}
           <p className="text-gray-600">
-            Are you sure you want to delete <strong>{selectedBuilding?.name}</strong>?
-            This action cannot be undone.
+            {t('complexes.deleteConfirmMessage')} <strong>{selectedBuilding?.name}</strong>?
+            {t('complexes.deleteConfirmNote')}
           </p>
           <div className="flex justify-end gap-3">
             <Button
@@ -408,14 +410,14 @@ const BuildingManagement: React.FC = () => {
               }}
               disabled={isDeleting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="danger"
               onClick={handleDelete}
               isLoading={isDeleting}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         </div>

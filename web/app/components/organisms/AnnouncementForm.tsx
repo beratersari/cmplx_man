@@ -7,24 +7,31 @@ import { Button, Alert } from '../atoms';
 import { FormField } from '../molecules';
 import { Announcement, Complex } from '../../types';
 import { useState, useEffect } from 'react';
+import { useTranslation } from '../../locales';
 
-const announcementSchema = z.object({
+const announcementSchema = (t: any) => z.object({
   title: z
     .string()
-    .min(3, 'Title must be at least 3 characters')
-    .max(200, 'Title must be less than 200 characters'),
+    .min(3, t('announcements.form.titleMinLength') || 'Title must be at least 3 characters')
+    .max(200, t('announcements.form.titleMaxLength') || 'Title must be less than 200 characters'),
   description: z
     .string()
-    .min(10, 'Description must be at least 10 characters')
-    .max(2000, 'Description must be less than 2000 characters'),
+    .min(10, t('announcements.form.descriptionMinLength') || 'Description must be at least 10 characters')
+    .max(2000, t('announcements.form.descriptionMaxLength') || 'Description must be less than 2000 characters'),
   complexId: z
     .string()
-    .min(1, 'Please select a complex'),
+    .min(1, t('announcements.form.complexRequired') || 'Please select a complex'),
   imgPath: z.string().optional(),
   commentsEnabled: z.boolean(),
 });
 
-type AnnouncementFormData = z.infer<typeof announcementSchema>;
+type AnnouncementFormData = {
+  title: string;
+  description: string;
+  complexId: string;
+  imgPath?: string;
+  commentsEnabled: boolean;
+};
 
 interface AnnouncementFormProps {
   complexes: Complex[];
@@ -41,6 +48,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
   onCancel,
   isLoading = false,
 }) => {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -49,7 +57,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
     reset,
     formState: { errors, isSubmitting },
   } = useForm<AnnouncementFormData>({
-    resolver: zodResolver(announcementSchema),
+    resolver: zodResolver(announcementSchema(t)),
     defaultValues: {
       title: initialData?.title || '',
       description: initialData?.description || '',
@@ -82,22 +90,22 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
         comments_enabled: data.commentsEnabled,
       });
     } catch (err: any) {
-      setError(err?.data?.detail || 'An error occurred. Please try again.');
+      setError(err?.data?.detail || t('common.errorOccurred') || 'An error occurred. Please try again.');
     }
   };
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4" noValidate>
       {error && (
-        <Alert variant="error" title="Error">
+        <Alert variant="error" title={t('common.error')}>
           {error}
         </Alert>
       )}
 
       <FormField
-        label="Title"
+        label={t('announcements.form.title')}
         type="text"
-        placeholder="Enter announcement title"
+        placeholder={t('announcements.form.titlePlaceholder')}
         error={errors.title?.message}
         required
         {...register('title')}
@@ -105,7 +113,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Description
+          {t('announcements.form.description')}
           <span className="text-red-500 ml-1">*</span>
         </label>
         <textarea
@@ -114,7 +122,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
           className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
             errors.description ? 'border-red-500' : 'border-gray-300'
           }`}
-          placeholder="Enter announcement description"
+          placeholder={t('announcements.form.descriptionPlaceholder')}
         />
         {errors.description && (
           <p className="mt-1 text-sm text-red-600">
@@ -124,16 +132,16 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
       </div>
 
       <FormField
-        label="Image URL (Optional)"
+        label={t('announcements.form.imageURL') || 'Image URL (Optional)'}
         type="text"
-        placeholder="Enter image URL"
+        placeholder={t('announcements.form.imageURLPlaceholder') || 'Enter image URL'}
         error={errors.imgPath?.message}
         {...register('imgPath')}
       />
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Complex
+          {t('common.complex') || 'Complex'}
           <span className="text-red-500 ml-1">*</span>
         </label>
         <select
@@ -142,7 +150,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
             errors.complexId ? 'border-red-500' : 'border-gray-300'
           }`}
         >
-          <option value="">Select a complex</option>
+          <option value="">{t('payments.form.selectComplex')}</option>
           {complexes.map((complex) => (
             <option key={complex.id} value={complex.id}>
               {complex.name}
@@ -163,7 +171,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
             {...register('commentsEnabled')}
             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
           />
-          <span className="text-sm font-medium text-gray-700">Enable Comments</span>
+          <span className="text-sm font-medium text-gray-700">{t('announcements.form.commentsEnabled')}</span>
         </label>
       </div>
 
@@ -174,14 +182,14 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
           onClick={onCancel}
           disabled={isLoading || isSubmitting}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           type="submit"
           variant="primary"
           isLoading={isLoading || isSubmitting}
         >
-          {initialData ? 'Update Announcement' : 'Create Announcement'}
+          {initialData ? t('announcements.form.updateAnnouncement') : t('announcements.form.createAnnouncement')}
         </Button>
       </div>
     </form>

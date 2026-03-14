@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import DashboardTemplate from '../../components/templates/DashboardTemplate';
-import { ComplexManagement, BuildingManagement, UserManagement, AnnouncementManagement, VisitorManagement, VehicleManagement, IssueCategoryManagement, IssueManagement, ReservationCategoryManagement, ReservationManagement } from '../../components/organisms';
+import { ComplexManagement, BuildingManagement, UserManagement, AnnouncementManagement, VisitorManagement, VehicleManagement, IssueCategoryManagement, IssueManagement, ReservationCategoryManagement, ReservationManagement, MarketplaceCategoryManagement, MarketplaceItemManagement, PaymentManagement } from '../../components/organisms';
 import { SummaryCard } from '../../components/atoms';
 import { Spinner } from '../../components/atoms';
+import { useTranslation } from '../../locales';
 import {
   useGetComplexesQuery,
   useGetIssueStatusSummaryQuery,
@@ -93,9 +94,9 @@ const MainTabContent: React.FC<MainTabContentProps> = ({ onNavigateToUsers, onNa
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900">Main Dashboard</h2>
+        <h2 className="text-xl font-semibold text-gray-900">{t('dashboard.mainDashboard')}</h2>
         <p className="text-gray-600 mt-1">
-          Welcome to the apartment management admin panel. Here you can view overall statistics and manage your properties.
+          {t('dashboard.welcomeMessage')}
         </p>
       </div>
 
@@ -111,9 +112,9 @@ const MainTabContent: React.FC<MainTabContentProps> = ({ onNavigateToUsers, onNa
           {/* Complexes Count Card */}
           {/* TODO: Integrate with complex management CRUD flow - link to complex list page */}
           <SummaryCard
-            title="Total Complexes"
+            title={t('dashboard.totalComplexes')}
             value={complexes?.length || 0}
-            subtitle="Active residential complexes"
+            subtitle={t('dashboard.activeResidentialComplexes')}
             icon={<ComplexesIcon />}
             color="blue"
           />
@@ -121,9 +122,9 @@ const MainTabContent: React.FC<MainTabContentProps> = ({ onNavigateToUsers, onNa
           {/* Outstanding Issues Card */}
           {/* TODO: Integrate with issues management CRUD flow - link to issues list page */}
           <SummaryCard
-            title="Outstanding Issues"
+            title={t('dashboard.outstandingIssues')}
             value={outstandingIssues}
-            subtitle={`${issueStats?.open || 0} open, ${issueStats?.in_progress || 0} in progress`}
+            subtitle={`${issueStats?.open || 0} ${t('dashboard.open')}, ${issueStats?.in_progress || 0} ${t('dashboard.inProgress')}`}
             icon={<IssuesIcon />}
             color="orange"
           />
@@ -131,9 +132,9 @@ const MainTabContent: React.FC<MainTabContentProps> = ({ onNavigateToUsers, onNa
           {/* Visitor Statistics Card */}
           {/* TODO: Integrate with visitors management CRUD flow - link to visitors list page */}
           <SummaryCard
-            title="Total Visitors"
+            title={t('dashboard.totalVisitors')}
             value={totalVisitors}
-            subtitle="Recent visitor registrations"
+            subtitle={t('dashboard.recentVisitorRegistrations')}
             icon={<VisitorsIcon />}
             color="purple"
           />
@@ -141,9 +142,9 @@ const MainTabContent: React.FC<MainTabContentProps> = ({ onNavigateToUsers, onNa
           {/* Vehicle Statistics Card */}
           {/* TODO: Integrate with vehicles management CRUD flow - link to vehicles list page */}
           <SummaryCard
-            title="Registered Vehicles"
+            title={t('dashboard.registeredVehicles')}
             value={totalVehicles}
-            subtitle="Total vehicles in complex"
+            subtitle={t('dashboard.totalVehiclesInComplex')}
             icon={<VehiclesIcon />}
             color="teal"
           />
@@ -151,9 +152,9 @@ const MainTabContent: React.FC<MainTabContentProps> = ({ onNavigateToUsers, onNa
           {/* Payments Overview Card */}
           {/* TODO: Integrate with payments management CRUD flow - link to payments list page */}
           <SummaryCard
-            title="Pending Payments"
+            title={t('dashboard.pendingPayments')}
             value={totalPendingPayments}
-            subtitle={`$${pendingAmount.toFixed(2)} pending`}
+            subtitle={`$${pendingAmount.toFixed(2)} ${t('dashboard.pending')}`}
             icon={<PaymentsIcon />}
             color="red"
           />
@@ -166,9 +167,9 @@ const MainTabContent: React.FC<MainTabContentProps> = ({ onNavigateToUsers, onNa
             tabIndex={0}
           >
             <SummaryCard
-              title="Total Users"
+              title={t('dashboard.totalUsers')}
               value={totalUsers}
-              subtitle="Click to manage users"
+              subtitle={t('dashboard.clickToManageUsers')}
               icon={
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
@@ -186,12 +187,12 @@ const MainTabContent: React.FC<MainTabContentProps> = ({ onNavigateToUsers, onNa
       {/* Recent Announcements Section */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Announcements</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.recentAnnouncements')}</h3>
           <button
             onClick={onNavigateToAnnouncements}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
-            View All →
+            {t('dashboard.viewAll')} →
           </button>
         </div>
         
@@ -221,7 +222,7 @@ const MainTabContent: React.FC<MainTabContentProps> = ({ onNavigateToUsers, onNa
                     <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                       <span>{new Date(announcement.created_date).toLocaleDateString()}</span>
                       <span>•</span>
-                      <span>{announcement.comments_enabled ? 'Comments enabled' : 'Comments disabled'}</span>
+                      <span>{announcement.comments_enabled ? t('announcements.enabled') : t('announcements.disabled')}</span>
                     </div>
                   </div>
                 </div>
@@ -230,7 +231,7 @@ const MainTabContent: React.FC<MainTabContentProps> = ({ onNavigateToUsers, onNa
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
-            No announcements yet
+            {t('dashboard.noAnnouncementsYet')}
           </div>
         )}
       </div>
@@ -258,6 +259,12 @@ const ReservationCategoryManagementContent = () => <ReservationCategoryManagemen
 
 const ReservationManagementContent = () => <ReservationManagement />;
 
+const MarketplaceCategoryManagementContent = () => <MarketplaceCategoryManagement />;
+
+const MarketplaceItemManagementContent = () => <MarketplaceItemManagement />;
+
+const PaymentManagementContent = () => <PaymentManagement />;
+
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('main');
 
@@ -273,6 +280,9 @@ export default function DashboardPage() {
     { id: 'issues', label: 'Issues', content: <IssueManagementContent /> },
     { id: 'reservation-categories', label: 'Reservation Categories', content: <ReservationCategoryManagementContent /> },
     { id: 'reservations', label: 'Reservations', content: <ReservationManagementContent /> },
+    { id: 'marketplace-categories', label: 'Marketplace Categories', content: <MarketplaceCategoryManagementContent /> },
+    { id: 'marketplace-items', label: 'Marketplace Items', content: <MarketplaceItemManagementContent /> },
+    { id: 'payments-oversight', label: 'Payments Oversight', content: <PaymentManagementContent /> },
   ];
 
   const activeTabContent = dashboardTabs.find(tab => tab.id === activeTab)?.content || dashboardTabs[0].content;

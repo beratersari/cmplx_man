@@ -7,37 +7,47 @@ import { Button, Alert } from '../atoms';
 import { FormField } from '../molecules';
 import { Reservation, Complex, ReservationCategory, User } from '../../types';
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from '../../locales';
 
 const timeRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/;
 
-const reservationSchema = z.object({
+const reservationSchema = (t: any) => z.object({
   categoryId: z
     .string()
-    .min(1, 'Please select a category'),
+    .min(1, t('reservations.form.categoryRequired') || 'Please select a category'),
   userId: z
     .string()
-    .min(1, 'Please select a user'),
+    .min(1, t('reservations.form.userRequired') || 'Please select a user'),
   complexId: z
     .string()
-    .min(1, 'Please select a complex'),
+    .min(1, t('reservations.form.complexRequired') || 'Please select a complex'),
   reservationDate: z
     .string()
-    .min(1, 'Please select a date'),
+    .min(1, t('reservations.form.dateRequired') || 'Please select a date'),
   startHour: z
     .string()
-    .regex(timeRegex, 'Invalid time format (HH:MM)'),
+    .regex(timeRegex, t('reservations.form.invalidTimeFormat') || 'Invalid time format (HH:MM)'),
   endHour: z
     .string()
-    .regex(timeRegex, 'Invalid time format (HH:MM)'),
+    .regex(timeRegex, t('reservations.form.invalidTimeFormat') || 'Invalid time format (HH:MM)'),
   personCount: z
     .number()
-    .min(1, 'At least 1 person required'),
+    .min(1, t('reservations.form.personCountMin') || 'At least 1 person required'),
   notes: z
     .string()
     .optional(),
 });
 
-type ReservationFormData = z.infer<typeof reservationSchema>;
+type ReservationFormData = {
+  categoryId: string;
+  userId: string;
+  complexId: string;
+  reservationDate: string;
+  startHour: string;
+  endHour: string;
+  personCount: number;
+  notes?: string;
+};
 
 interface ReservationFormProps {
   complexes: Complex[];
@@ -60,6 +70,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
   isLoading = false,
   isEdit = false,
 }) => {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -69,7 +80,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     watch,
     formState: { errors, isSubmitting },
   } = useForm<ReservationFormData>({
-    resolver: zodResolver(reservationSchema),
+    resolver: zodResolver(reservationSchema(t)),
     defaultValues: {
       categoryId: initialData?.category_id?.toString() || '',
       userId: initialData?.user_id?.toString() || '',
@@ -130,7 +141,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
 
       await onSubmit(submitData);
     } catch (err: any) {
-      setError(err?.data?.detail || 'An error occurred. Please try again.');
+      setError(err?.data?.detail || t('common.errorOccurred') || 'An error occurred. Please try again.');
     }
   };
 
@@ -144,7 +155,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4" noValidate>
       {error && (
-        <Alert variant="error" title="Error">
+        <Alert variant="error" title={t('common.error')}>
           {error}
         </Alert>
       )}
@@ -153,7 +164,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
         <>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Complex
+              {t('reservations.form.complex')}
               <span className="text-red-500 ml-1">*</span>
             </label>
             <select
@@ -162,7 +173,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                 errors.complexId ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-              <option value="">Select a complex</option>
+              <option value="">{t('reservations.form.selectComplex')}</option>
               {complexes.map((complex) => (
                 <option key={complex.id} value={complex.id}>
                   {complex.name}
@@ -176,7 +187,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              User
+              {t('reservations.form.user')}
               <span className="text-red-500 ml-1">*</span>
             </label>
             <select
@@ -185,7 +196,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                 errors.userId ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-              <option value="">Select a user</option>
+              <option value="">{t('reservations.form.selectUser')}</option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.username}
@@ -201,7 +212,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Category
+          {t('reservations.form.category')}
           <span className="text-red-500 ml-1">*</span>
         </label>
         <select
@@ -210,7 +221,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
             errors.categoryId ? 'border-red-500' : 'border-gray-300'
           }`}
         >
-          <option value="">Select a category</option>
+          <option value="">{t('reservations.form.selectCategory')}</option>
           {filteredCategories.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
@@ -222,14 +233,14 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
         )}
         {selectedComplexId && filteredCategories.length === 0 && (
           <p className="mt-1 text-sm text-yellow-600">
-            No categories available for this complex
+            {t('issues.form.noCategoriesAvailable')}
           </p>
         )}
       </div>
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Reservation Date
+          {t('reservations.form.reservationDate')}
           <span className="text-red-500 ml-1">*</span>
         </label>
         <input
@@ -246,7 +257,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
 
       <div className="grid grid-cols-2 gap-4">
         <FormField
-          label="Start Time"
+          label={t('reservations.form.startHour')}
           type="text"
           placeholder="HH:MM"
           error={errors.startHour?.message}
@@ -255,7 +266,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
         />
 
         <FormField
-          label="End Time"
+          label={t('reservations.form.endHour')}
           type="text"
           placeholder="HH:MM"
           error={errors.endHour?.message}
@@ -265,7 +276,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
       </div>
 
       <FormField
-        label="Number of People"
+        label={t('reservations.form.personCount')}
         type="number"
         error={errors.personCount?.message}
         required
@@ -274,13 +285,13 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Notes
+          {t('reservations.form.notes')}
         </label>
         <textarea
           {...register('notes')}
           rows={3}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Optional notes..."
+          placeholder={t('reservations.form.notesPlaceholder')}
         />
       </div>
 
@@ -291,14 +302,14 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
           onClick={onCancel}
           disabled={isLoading || isSubmitting}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           type="submit"
           variant="primary"
           isLoading={isLoading || isSubmitting}
         >
-          {isEdit ? 'Update Reservation' : 'Create Reservation'}
+          {isEdit ? t('reservations.form.updateReservation') : t('reservations.form.createReservation')}
         </Button>
       </div>
     </form>

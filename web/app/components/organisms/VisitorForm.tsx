@@ -7,19 +7,20 @@ import { Button, Alert } from '../atoms';
 import { FormField } from '../molecules';
 import { Visitor, Complex } from '../../types';
 import { useState, useEffect } from 'react';
+import { useTranslation } from '../../locales';
 
-const createVisitorSchema = (showComplexSelect: boolean) => z.object({
+const createVisitorSchema = (t: any, showComplexSelect: boolean) => z.object({
   name: z
     .string()
-    .min(1, 'Name is required')
-    .max(100, 'Name must be less than 100 characters'),
+    .min(1, t('visitors.form.nameRequired') || 'Name is required')
+    .max(100, t('visitors.form.nameMaxLength') || 'Name must be less than 100 characters'),
   plate_number: z
     .string()
-    .max(20, 'Plate number must be less than 20 characters')
+    .max(20, t('visitors.form.plateNumberMaxLength') || 'Plate number must be less than 20 characters')
     .optional()
     .or(z.literal('')),
   complexId: showComplexSelect
-    ? z.string().min(1, 'Please select a complex')
+    ? z.string().min(1, t('visitors.form.complexRequired') || 'Please select a complex')
     : z.string().optional(),
 });
 
@@ -48,9 +49,10 @@ const VisitorForm: React.FC<VisitorFormProps> = ({
   isEdit = false,
   showComplexSelect = true,
 }) => {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
 
-  const visitorSchema = createVisitorSchema(showComplexSelect);
+  const visitorSchema = createVisitorSchema(t, showComplexSelect);
 
   const {
     register,
@@ -88,31 +90,31 @@ const VisitorForm: React.FC<VisitorFormProps> = ({
       }
       await onSubmit(submitData);
     } catch (err: any) {
-      setError(err?.data?.detail || 'An error occurred. Please try again.');
+      setError(err?.data?.detail || t('common.errorOccurred') || 'An error occurred. Please try again.');
     }
   };
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4" noValidate>
       {error && (
-        <Alert variant="error" title="Error">
+        <Alert variant="error" title={t('common.error')}>
           {error}
         </Alert>
       )}
 
       <FormField
-        label="Visitor Name"
+        label={t('visitors.form.name')}
         type="text"
-        placeholder="Enter visitor name"
+        placeholder={t('visitors.form.namePlaceholder')}
         error={errors.name?.message}
         required
         {...register('name')}
       />
 
       <FormField
-        label="Plate Number"
+        label={t('visitors.form.plateNumber')}
         type="text"
-        placeholder="Enter vehicle plate number (optional)"
+        placeholder={t('visitors.form.plateNumberPlaceholder')}
         error={errors.plate_number?.message}
         {...register('plate_number')}
       />
@@ -120,7 +122,7 @@ const VisitorForm: React.FC<VisitorFormProps> = ({
       {showComplexSelect && !isEdit && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Complex
+            {t('visitors.form.complex')}
             <span className="text-red-500 ml-1">*</span>
           </label>
           <select
@@ -129,7 +131,7 @@ const VisitorForm: React.FC<VisitorFormProps> = ({
               errors.complexId ? 'border-red-500' : 'border-gray-300'
             }`}
           >
-            <option value="">Select a complex</option>
+            <option value="">{t('visitors.form.selectComplex')}</option>
             {complexes.map((complex) => (
               <option key={complex.id} value={complex.id}>
                 {complex.name}
@@ -151,14 +153,14 @@ const VisitorForm: React.FC<VisitorFormProps> = ({
           onClick={onCancel}
           disabled={isLoading || isSubmitting}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           type="submit"
           variant="primary"
           isLoading={isLoading || isSubmitting}
         >
-          {isEdit ? 'Update Visitor' : 'Register Visitor'}
+          {isEdit ? t('visitors.form.updateVisitor') : t('visitors.form.createVisitor')}
         </Button>
       </div>
     </form>

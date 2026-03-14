@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { Complex, ComplexCreate, ComplexUpdate, Building, BuildingCreate, BuildingUpdate, User, AdminComplexAssignment, IssueStatusSummary, VisitorCountByBuilding, VehicleStats, PaymentStatsByBuilding, Announcement, AnnouncementCreate, AnnouncementUpdate, AnnouncementEmotion, Comment, Visitor, VisitorCreate, VisitorUpdate, VisitorStatusUpdate, Vehicle, VehicleCreate, VehicleUpdate, Issue, IssueCreate, AdminIssueCreate, IssueUpdate, IssueCategory, IssueCategoryCreate, AdminIssueCategoryCreate, IssueCategoryUpdate, IssueCountByCategory, ReservationCategory, ReservationCategoryCreate, AdminReservationCategoryCreate, ReservationCategoryUpdate, Reservation, ReservationCreate, AdminReservationCreate, ReservationUpdate, ReservationStatusUpdate, ReservationOverlapStats, ReservationOverlapStatsById } from '../types';
+import { Complex, ComplexCreate, ComplexUpdate, Building, BuildingCreate, BuildingUpdate, User, AdminComplexAssignment, IssueStatusSummary, VisitorCountByBuilding, VehicleStats, PaymentStatsByBuilding, Announcement, AnnouncementCreate, AnnouncementUpdate, AnnouncementEmotion, Comment, Visitor, VisitorCreate, VisitorUpdate, VisitorStatusUpdate, Vehicle, VehicleCreate, VehicleUpdate, Issue, IssueCreate, AdminIssueCreate, IssueUpdate, IssueCategory, IssueCategoryCreate, AdminIssueCategoryCreate, IssueCategoryUpdate, IssueCountByCategory, ReservationCategory, ReservationCategoryCreate, AdminReservationCategoryCreate, ReservationCategoryUpdate, Reservation, ReservationCreate, AdminReservationCreate, ReservationUpdate, ReservationStatusUpdate, ReservationOverlapStats, ReservationOverlapStatsById, MarketplaceCategory, MarketplaceCategoryCreate, AdminMarketplaceCategoryCreate, MarketplaceCategoryUpdate, MarketplaceItem, MarketplaceItemCreate, AdminMarketplaceItemCreate, MarketplaceItemUpdate, MarketplaceItemStatus, Payment, PaymentCreateForAll, PaymentCreateForSpecific, AdminPaymentCreateForAll, AdminPaymentCreateForSpecific, PaymentUpdate, PaymentRecord, PaymentRecordStatusUpdate, PaymentStats, PaymentsByBuilding } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -15,7 +15,7 @@ export const apiSlice = createApi({
       return headers;
     },
   }),
-  tagTypes: ['User', 'Complex', 'Building', 'Announcement', 'Issue', 'Reservation', 'Payment', 'Visitor', 'Vehicle'],
+  tagTypes: ['User', 'Complex', 'Building', 'Announcement', 'Issue', 'Reservation', 'Payment', 'Visitor', 'Vehicle', 'Marketplace'],
   endpoints: () => ({}),
 });
 
@@ -529,6 +529,167 @@ export const enhancedApi = apiSlice.injectEndpoints({
         `/reservations/overlap-stats?category_id=${categoryId}&date=${date}&start_hour=${startHour}&end_hour=${endHour}`,
       providesTags: ['Reservation'],
     }),
+
+    // Marketplace Category endpoints
+    getMarketplaceCategories: builder.query<MarketplaceCategory[], { complexId?: number; skip?: number; limit?: number }>({
+      query: ({ complexId, skip = 0, limit = 100 } = {}) => {
+        const params = new URLSearchParams({
+          skip: String(skip),
+          limit: String(limit),
+        });
+        if (complexId) {
+          params.append('complex_id', String(complexId));
+        }
+        return `/marketplace-categories?${params.toString()}`;
+      },
+      providesTags: ['Marketplace'],
+    }),
+
+    createMarketplaceCategory: builder.mutation<MarketplaceCategory, MarketplaceCategoryCreate>({
+      query: (category) => ({
+        url: '/marketplace-categories',
+        method: 'POST',
+        body: category,
+      }),
+      invalidatesTags: ['Marketplace'],
+    }),
+
+    adminCreateMarketplaceCategory: builder.mutation<MarketplaceCategory, AdminMarketplaceCategoryCreate>({
+      query: (category) => ({
+        url: '/marketplace-categories/admin',
+        method: 'POST',
+        body: category,
+      }),
+      invalidatesTags: ['Marketplace'],
+    }),
+
+    adminUpdateMarketplaceCategory: builder.mutation<MarketplaceCategory, { id: number; data: AdminMarketplaceCategoryCreate }>({
+      query: ({ id, data }) => ({
+        url: `/marketplace-categories/admin/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: 'Marketplace', id }, 'Marketplace'],
+    }),
+
+    deleteMarketplaceCategory: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/marketplace-categories/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Marketplace'],
+    }),
+
+    // Marketplace Item endpoints
+    getMarketplaceItems: builder.query<MarketplaceItem[], { complexId?: number; categoryId?: number; status?: MarketplaceItemStatus; skip?: number; limit?: number }>({
+      query: ({ complexId, categoryId, status, skip = 0, limit = 100 } = {}) => {
+        const params = new URLSearchParams({
+          skip: String(skip),
+          limit: String(limit),
+        });
+        if (complexId) {
+          params.append('complex_id', String(complexId));
+        }
+        if (categoryId) {
+          params.append('category_id', String(categoryId));
+        }
+        if (status) {
+          params.append('status', status);
+        }
+        return `/marketplace-items?${params.toString()}`;
+      },
+      providesTags: ['Marketplace'],
+    }),
+
+    getMarketplaceItemById: builder.query<MarketplaceItem, number>({
+      query: (id) => `/marketplace-items/${id}`,
+      providesTags: (_, __, id) => [{ type: 'Marketplace', id }],
+    }),
+
+    createMarketplaceItem: builder.mutation<MarketplaceItem, MarketplaceItemCreate>({
+      query: (item) => ({
+        url: '/marketplace-items',
+        method: 'POST',
+        body: item,
+      }),
+      invalidatesTags: ['Marketplace'],
+    }),
+
+    adminCreateMarketplaceItem: builder.mutation<MarketplaceItem, AdminMarketplaceItemCreate>({
+      query: (item) => ({
+        url: '/marketplace-items/admin',
+        method: 'POST',
+        body: item,
+      }),
+      invalidatesTags: ['Marketplace'],
+    }),
+
+    updateMarketplaceItem: builder.mutation<MarketplaceItem, { id: number; data: MarketplaceItemUpdate }>({
+      query: ({ id, data }) => ({
+        url: `/marketplace-items/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: 'Marketplace', id }, 'Marketplace'],
+    }),
+
+    deleteMarketplaceItem: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/marketplace-items/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Marketplace'],
+    }),
+
+    // Payment endpoints
+    adminCreatePaymentForAll: builder.mutation<Payment, AdminPaymentCreateForAll>({
+      query: (payment) => ({
+        url: '/payments/admin/for-all',
+        method: 'POST',
+        body: payment,
+      }),
+      invalidatesTags: ['Payment'],
+    }),
+
+    adminCreatePaymentForSpecific: builder.mutation<Payment, AdminPaymentCreateForSpecific>({
+      query: (payment) => ({
+        url: '/payments/admin/for-specific',
+        method: 'POST',
+        body: payment,
+      }),
+      invalidatesTags: ['Payment'],
+    }),
+
+    adminListPayments: builder.query<Payment[], { complexId?: number; skip?: number; limit?: number }>({
+      query: ({ complexId, skip = 0, limit = 50 } = {}) => {
+        const params = new URLSearchParams({
+          skip: String(skip),
+          limit: String(limit),
+        });
+        if (complexId) {
+          params.append('complex_id', String(complexId));
+        }
+        return `/payments/admin/list?${params.toString()}`;
+      },
+      providesTags: ['Payment'],
+    }),
+
+    updatePaymentRecordStatus: builder.mutation<PaymentRecord, { paymentId: number; recordId: number; data: PaymentRecordStatusUpdate }>({
+      query: ({ paymentId, recordId, data }) => ({
+        url: `/payments/${paymentId}/records/${recordId}/status`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Payment'],
+    }),
+
+    deletePayment: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/payments/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Payment'],
+    }),
   }),
 });
 
@@ -589,4 +750,20 @@ export const {
   useUpdateReservationStatusMutation,
   useDeleteReservationMutation,
   useGetReservationOverlapStatsQuery,
+  useGetMarketplaceCategoriesQuery,
+  useCreateMarketplaceCategoryMutation,
+  useAdminCreateMarketplaceCategoryMutation,
+  useAdminUpdateMarketplaceCategoryMutation,
+  useDeleteMarketplaceCategoryMutation,
+  useGetMarketplaceItemsQuery,
+  useGetMarketplaceItemByIdQuery,
+  useCreateMarketplaceItemMutation,
+  useAdminCreateMarketplaceItemMutation,
+  useUpdateMarketplaceItemMutation,
+  useDeleteMarketplaceItemMutation,
+  useAdminCreatePaymentForAllMutation,
+  useAdminCreatePaymentForSpecificMutation,
+  useAdminListPaymentsQuery,
+  useUpdatePaymentRecordStatusMutation,
+  useDeletePaymentMutation,
 } = enhancedApi;

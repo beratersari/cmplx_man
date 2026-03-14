@@ -7,19 +7,23 @@ import { Button, Alert } from '../atoms';
 import { FormField } from '../molecules';
 import { Complex } from '../../types';
 import { useState } from 'react';
+import { useTranslation } from '../../locales';
 
-const complexSchema = z.object({
+const complexSchema = (t: any) => z.object({
   name: z
     .string()
-    .min(3, 'Name must be at least 3 characters')
-    .max(100, 'Name must be less than 100 characters'),
+    .min(3, t('complexes.form.nameMinLength') || 'Name must be at least 3 characters')
+    .max(100, t('complexes.form.nameMaxLength') || 'Name must be less than 100 characters'),
   address: z
     .string()
-    .min(5, 'Address must be at least 5 characters')
-    .max(200, 'Address must be less than 200 characters'),
+    .min(5, t('complexes.form.addressMinLength') || 'Address must be at least 5 characters')
+    .max(200, t('complexes.form.addressMaxLength') || 'Address must be less than 200 characters'),
 });
 
-type ComplexFormData = z.infer<typeof complexSchema>;
+type ComplexFormData = {
+  name: string;
+  address: string;
+};
 
 interface ComplexFormProps {
   initialData?: Complex | null;
@@ -34,6 +38,7 @@ const ComplexForm: React.FC<ComplexFormProps> = ({
   onCancel,
   isLoading = false,
 }) => {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -41,7 +46,7 @@ const ComplexForm: React.FC<ComplexFormProps> = ({
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ComplexFormData>({
-    resolver: zodResolver(complexSchema),
+    resolver: zodResolver(complexSchema(t)),
     defaultValues: {
       name: initialData?.name || '',
       address: initialData?.address || '',
@@ -53,31 +58,31 @@ const ComplexForm: React.FC<ComplexFormProps> = ({
       setError(null);
       await onSubmit(data);
     } catch (err: any) {
-      setError(err?.data?.detail || 'An error occurred. Please try again.');
+      setError(err?.data?.detail || t('common.errorOccurred') || 'An error occurred. Please try again.');
     }
   };
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4" noValidate>
       {error && (
-        <Alert variant="error" title="Error">
+        <Alert variant="error" title={t('common.error')}>
           {error}
         </Alert>
       )}
 
       <FormField
-        label="Complex Name"
+        label={t('complexes.form.name')}
         type="text"
-        placeholder="Enter complex name"
+        placeholder={t('complexes.form.namePlaceholder')}
         error={errors.name?.message}
         required
         {...register('name')}
       />
 
       <FormField
-        label="Address"
+        label={t('complexes.form.address')}
         type="text"
-        placeholder="Enter address"
+        placeholder={t('complexes.form.addressPlaceholder')}
         error={errors.address?.message}
         required
         {...register('address')}
@@ -90,14 +95,14 @@ const ComplexForm: React.FC<ComplexFormProps> = ({
           onClick={onCancel}
           disabled={isLoading || isSubmitting}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           type="submit"
           variant="primary"
           isLoading={isLoading || isSubmitting}
         >
-          {initialData ? 'Update Complex' : 'Create Complex'}
+          {initialData ? t('complexes.form.updateComplex') : t('complexes.form.createComplex')}
         </Button>
       </div>
     </form>

@@ -15,8 +15,10 @@ import {
   useDeleteVehicleMutation,
 } from '../../store/apiSlice';
 import { Vehicle, Complex, User } from '../../types';
+import { useTranslation } from '../../locales';
 
 const VehicleManagement: React.FC = () => {
+  const { t } = useTranslation();
   // State
   const [searchTerm, setSearchTerm] = useState('');
   const [complexFilter, setComplexFilter] = useState('');
@@ -100,7 +102,7 @@ const VehicleManagement: React.FC = () => {
       setSelectedVehicle(null);
       refetch();
     } catch (err: any) {
-      setDeleteError(err?.data?.detail || 'Failed to delete vehicle');
+      setDeleteError(err?.data?.detail || t('vehicles.deleteError') || 'Failed to delete vehicle');
     }
   };
 
@@ -129,31 +131,31 @@ const VehicleManagement: React.FC = () => {
     },
     {
       key: 'plate_number',
-      header: 'Plate Number',
+      header: t('vehicles.plateNumber'),
       render: (vehicle) => (
         <span className="font-medium text-gray-900">{vehicle.plate_number}</span>
       ),
     },
     {
       key: 'owner',
-      header: 'Owner',
+      header: t('vehicles.owner'),
       render: (vehicle) => {
         const owner = userMap.get(vehicle.user_id);
         return (
-          <span className="text-gray-600">{owner?.username || `User ${vehicle.user_id}`}</span>
+          <span className="text-gray-600">{owner?.username || `${t('users.user')} ${vehicle.user_id}`}</span>
         );
       },
     },
     {
       key: 'created_date',
-      header: 'Registered',
+      header: t('vehicles.registered'),
       render: (vehicle) => (
         <span className="text-gray-500">{formatDate(vehicle.created_date)}</span>
       ),
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('common.actions'),
       className: 'w-32',
       render: (vehicle) => (
         <div className="flex items-center gap-2">
@@ -164,7 +166,7 @@ const VehicleManagement: React.FC = () => {
             }}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
-            Edit
+            {t('common.edit')}
           </button>
           <button
             onClick={(e) => {
@@ -173,7 +175,7 @@ const VehicleManagement: React.FC = () => {
             }}
             className="text-red-600 hover:text-red-800 text-sm font-medium"
           >
-            Delete
+            {t('common.delete')}
           </button>
         </div>
       ),
@@ -187,9 +189,9 @@ const VehicleManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Vehicle Administration</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('vehicles.title')}</h2>
           <p className="text-gray-600 mt-1">
-            Manage vehicle registrations for residents
+            {t('vehicles.subtitle')}
           </p>
         </div>
         <Button
@@ -199,23 +201,23 @@ const VehicleManagement: React.FC = () => {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Register Vehicle
+          {t('vehicles.registerVehicle')}
         </Button>
       </div>
 
       {/* Stats Panel */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Vehicle Statistics</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('vehicles.statistics')}</h3>
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filter by Complex
+            {t('common.filterByComplex') || 'Filter by Complex'}
           </label>
           <select
             value={complexFilter}
             onChange={(e) => setComplexFilter(e.target.value)}
             className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="">Select a complex</option>
+            <option value="">{t('payments.form.selectComplex')}</option>
             {complexes?.map((complex) => (
               <option key={complex.id} value={complex.id}>
                 {complex.name}
@@ -231,9 +233,9 @@ const VehicleManagement: React.FC = () => {
         ) : complexFilter && vehicleStats ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <SummaryCard
-              title="Total Vehicles"
+              title={t('vehicles.totalVehicles')}
               value={vehicleStats.total_vehicles}
-              subtitle="In selected complex"
+              subtitle={t('vehicles.inSelectedComplex')}
               icon={
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
@@ -246,7 +248,7 @@ const VehicleManagement: React.FC = () => {
                 key={stat.complex_id}
                 title={stat.complex_name}
                 value={stat.vehicle_count}
-                subtitle="Vehicles"
+                subtitle={t('vehicles.title')}
                 icon={
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -258,7 +260,7 @@ const VehicleManagement: React.FC = () => {
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
-            Select a complex to view vehicle statistics
+            {t('vehicles.selectComplexToViewStats')}
           </div>
         )}
       </div>
@@ -270,7 +272,7 @@ const VehicleManagement: React.FC = () => {
           setSearchTerm(value);
           setCurrentPage(1);
         }}
-        searchPlaceholder="Search vehicles by plate number..."
+        searchPlaceholder={t('vehicles.searchPlaceholder')}
       />
 
       {/* Table */}
@@ -284,7 +286,7 @@ const VehicleManagement: React.FC = () => {
             columns={columns}
             data={paginatedData}
             keyExtractor={(vehicle) => vehicle.id}
-            emptyMessage="No vehicles found"
+            emptyMessage={t('vehicles.noVehiclesFound')}
           />
           <Pagination
             currentPage={currentPage}
@@ -303,7 +305,7 @@ const VehicleManagement: React.FC = () => {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Register New Vehicle"
+        title={t('vehicles.registerVehicle')}
         size="md"
       >
         <VehicleForm
@@ -321,7 +323,7 @@ const VehicleManagement: React.FC = () => {
           setIsEditModalOpen(false);
           setSelectedVehicle(null);
         }}
-        title="Edit Vehicle"
+        title={t('vehicles.editVehicle')}
         size="md"
       >
         <VehicleForm
@@ -345,18 +347,18 @@ const VehicleManagement: React.FC = () => {
           setSelectedVehicle(null);
           setDeleteError(null);
         }}
-        title="Delete Vehicle"
+        title={t('vehicles.deleteVehicle')}
         size="sm"
       >
         <div className="space-y-4">
           {deleteError && (
-            <Alert variant="error" title="Error">
+            <Alert variant="error" title={t('common.error')}>
               {deleteError}
             </Alert>
           )}
           <p className="text-gray-600">
-            Are you sure you want to delete vehicle <strong>{selectedVehicle?.plate_number}</strong>?
-            This action cannot be undone.
+            {t('vehicles.deleteConfirmMessage') || 'Are you sure you want to delete vehicle'} <strong>{selectedVehicle?.plate_number}</strong>?
+            {t('complexes.deleteConfirmNote')}
           </p>
           <div className="flex justify-end gap-3">
             <Button
@@ -368,14 +370,14 @@ const VehicleManagement: React.FC = () => {
               }}
               disabled={isDeleting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="danger"
               onClick={handleDelete}
               isLoading={isDeleting}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         </div>

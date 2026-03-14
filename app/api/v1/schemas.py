@@ -494,6 +494,11 @@ class MarketplaceItemCreate(MarketplaceItemBase):
     pass
 
 
+class AdminMarketplaceItemCreate(MarketplaceItemBase):
+    """Schema for admin to create a marketplace item in any complex."""
+    complex_id: int = Field(..., gt=0)
+
+
 class MarketplaceItemUpdate(BaseModel):
     category_id: Optional[int] = Field(None, gt=0)
     title: Optional[str] = Field(None, min_length=3, max_length=100)

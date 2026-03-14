@@ -6,8 +6,10 @@ import { Table, SearchFilter } from '../molecules';
 import { Column } from '../molecules/Table';
 import { useGetUsersQuery } from '../../store/apiSlice';
 import { User } from '../../types';
+import { useTranslation } from '../../locales';
 
 const UserManagement: React.FC = () => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -57,34 +59,34 @@ const UserManagement: React.FC = () => {
     },
     {
       key: 'username',
-      header: 'Username',
+      header: t('users.username'),
       render: (user) => (
         <span className="font-medium text-gray-900">{user.username}</span>
       ),
     },
     {
       key: 'email',
-      header: 'Email',
+      header: t('users.email'),
       render: (user) => (
         <span className="text-gray-600">{user.email}</span>
       ),
     },
     {
       key: 'role',
-      header: 'Role',
+      header: t('users.role'),
       render: (user) => (
         <span
           className={`px-2 py-1 text-xs font-medium rounded-full ${
             roleColors[user.role] || 'bg-gray-100 text-gray-800'
           }`}
         >
-          {user.role}
+          {t(`users.roles.${user.role}`) || user.role}
         </span>
       ),
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('common.status'),
       render: (user) => (
         <span
           className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -93,20 +95,20 @@ const UserManagement: React.FC = () => {
               : 'bg-red-100 text-red-800'
           }`}
         >
-          {user.is_active ? 'Active' : 'Inactive'}
+          {user.is_active ? t('users.active') : t('users.inactive')}
         </span>
       ),
     },
     {
       key: 'unit_number',
-      header: 'Unit',
+      header: t('users.unit'),
       render: (user) => (
         <span className="text-gray-500">{user.unit_number || '-'}</span>
       ),
     },
     {
       key: 'created_date',
-      header: 'Created',
+      header: t('common.created'),
       render: (user) => (
         <span className="text-gray-500">
           {new Date(user.created_date).toLocaleDateString()}
@@ -120,9 +122,9 @@ const UserManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">User Management</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('users.title')}</h2>
           <p className="text-gray-600 mt-1">
-            Manage system users and their assignments
+            {t('users.subtitle')}
           </p>
         </div>
       </div>
@@ -134,34 +136,34 @@ const UserManagement: React.FC = () => {
           setSearchTerm(value);
           setCurrentPage(1);
         }}
-        searchPlaceholder="Search users by username, email, or contact..."
+        searchPlaceholder={t('users.searchPlaceholder')}
         filters={[
           {
             key: 'role',
-            label: 'All Roles',
+            label: t('users.allRoles'),
             value: roleFilter,
             onChange: (value) => {
               setRoleFilter(value);
               setCurrentPage(1);
             },
             options: [
-              { value: 'ADMIN', label: 'Admin' },
-              { value: 'SITE_MANAGER', label: 'Site Manager' },
-              { value: 'SITE_ATTENDANT', label: 'Site Attendant' },
-              { value: 'RESIDENT', label: 'Resident' },
+              { value: 'ADMIN', label: t('users.roles.ADMIN') },
+              { value: 'SITE_MANAGER', label: t('users.roles.SITE_MANAGER') },
+              { value: 'SITE_ATTENDANT', label: t('users.roles.SITE_ATTENDANT') },
+              { value: 'RESIDENT', label: t('users.roles.RESIDENT') },
             ],
           },
           {
             key: 'status',
-            label: 'All Statuses',
+            label: t('users.allStatuses'),
             value: statusFilter,
             onChange: (value) => {
               setStatusFilter(value);
               setCurrentPage(1);
             },
             options: [
-              { value: 'active', label: 'Active' },
-              { value: 'inactive', label: 'Inactive' },
+              { value: 'active', label: t('users.active') },
+              { value: 'inactive', label: t('users.inactive') },
             ],
           },
         ]}
@@ -178,7 +180,7 @@ const UserManagement: React.FC = () => {
             columns={columns}
             data={paginatedData}
             keyExtractor={(user) => user.id}
-            emptyMessage="No users found"
+            emptyMessage={t('users.noUsersFound')}
           />
           <Pagination
             currentPage={currentPage}

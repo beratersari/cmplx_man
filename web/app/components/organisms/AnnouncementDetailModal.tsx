@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Modal, Spinner, Button } from '../atoms';
 import { Announcement, Complex, AnnouncementEmotion, Comment, User } from '../../types';
+import { useTranslation } from '../../locales';
 
 interface AnnouncementDetailModalProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
   onAddEmotion,
   onAddComment,
 }) => {
+  const { t } = useTranslation();
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
 
@@ -60,7 +62,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-gray-900">{comment.user?.username || 'Unknown'}</span>
+            <span className="font-medium text-gray-900">{comment.user?.username || t('common.unknown') || 'Unknown'}</span>
             <span className="text-xs text-gray-500">
               {new Date(comment.created_date).toLocaleDateString()}
             </span>
@@ -72,7 +74,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
               onClick={() => setReplyTo(comment)}
               className="text-sm text-blue-600 hover:text-blue-800 mt-2"
             >
-              Reply
+              {t('modals.announcement.reply')}
             </button>
           )}
 
@@ -97,7 +99,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
         {/* Announcement Info */}
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <span>{complex?.name || 'Unknown Complex'}</span>
+            <span>{complex?.name || t('common.unknown') || 'Unknown Complex'}</span>
             <span>•</span>
             <span>{new Date(announcement.created_date).toLocaleDateString()}</span>
           </div>
@@ -115,7 +117,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
 
         {/* Reactions */}
         <div>
-          <h4 className="text-sm font-medium text-gray-500 mb-2">Reactions</h4>
+          <h4 className="text-sm font-medium text-gray-500 mb-2">{t('modals.announcement.reactions')}</h4>
           <div className="flex items-center gap-2 flex-wrap">
             {EMOJI_OPTIONS.map((emoji) => (
               <button
@@ -140,19 +142,19 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
         {announcement.comments_enabled && (
           <div>
             <h4 className="text-sm font-medium text-gray-500 mb-3">
-              Comments ({comments.length})
+              {t('modals.announcement.comments')} ({comments.length})
             </h4>
 
             {/* Add Comment */}
             <div className="mb-4">
               {replyTo && (
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                  <span>Replying to {replyTo.user?.username}</span>
+                  <span>{t('modals.announcement.replyingTo')} {replyTo.user?.username}</span>
                   <button
                     onClick={() => setReplyTo(null)}
                     className="text-red-500 hover:text-red-700"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               )}
@@ -161,7 +163,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
                   type="text"
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder={replyTo ? 'Write a reply...' : 'Write a comment...'}
+                  placeholder={replyTo ? t('modals.announcement.writeReply') : t('modals.announcement.writeComment')}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <Button
@@ -169,7 +171,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
                   disabled={!commentText.trim()}
                   variant="primary"
                 >
-                  Post
+                  {t('modals.announcement.post')}
                 </Button>
               </div>
             </div>
@@ -185,7 +187,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
-                No comments yet. Be the first to comment!
+                {t('modals.announcement.noComments')}
               </div>
             )}
           </div>
@@ -193,7 +195,7 @@ const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = ({
 
         {!announcement.comments_enabled && (
           <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-lg">
-            Comments are disabled for this announcement
+            {t('modals.announcement.commentsDisabled')}
           </div>
         )}
       </div>

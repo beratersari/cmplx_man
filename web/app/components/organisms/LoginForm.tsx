@@ -10,23 +10,28 @@ import Button from '../atoms/Button';
 import FormField from '../molecules/FormField';
 import Alert from '../atoms/Alert';
 import { useState } from 'react';
+import { useTranslation } from '../../locales';
 
-const loginSchema = z.object({
+const loginSchema = (t: any) => z.object({
   username: z
     .string()
-    .min(1, 'Username is required')
-    .min(3, 'Username must be at least 3 characters')
-    .max(50, 'Username must be less than 50 characters')
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens'),
+    .min(1, t('dashboard.login.form.usernameRequired') || 'Username is required')
+    .min(3, t('dashboard.login.form.usernameMinLength') || 'Username must be at least 3 characters')
+    .max(50, t('dashboard.login.form.usernameMaxLength') || 'Username must be less than 50 characters')
+    .regex(/^[a-zA-Z0-9_-]+$/, t('dashboard.login.form.usernameRegex') || 'Username can only contain letters, numbers, underscores, and hyphens'),
   password: z
     .string()
-    .min(1, 'Password is required')
-    .min(8, 'Password must be at least 8 characters'),
+    .min(1, t('dashboard.login.form.passwordRequired') || 'Password is required')
+    .min(8, t('dashboard.login.form.passwordMinLength') || 'Password must be at least 8 characters'),
 });
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = {
+  username: string;
+  password: string;
+};
 
 const LoginForm = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const [login, { isLoading }] = useLoginMutation();
   const { login: setAuth } = useAuth();
@@ -37,7 +42,7 @@ const LoginForm = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(loginSchema(t)),
     defaultValues: {
       username: '',
       password: '',
@@ -55,31 +60,31 @@ const LoginForm = () => {
       }
       router.push('/dashboard');
     } catch (error: any) {
-      setApiError(error?.data?.detail || 'An error occurred during login. Please try again.');
+      setApiError(error?.data?.detail || t('dashboard.login.form.errorOccurred') || 'An error occurred during login. Please try again.');
     }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
       {apiError && (
-        <Alert variant="error" title="Login Failed">
+        <Alert variant="error" title={t('dashboard.login.failed')}>
           {apiError}
         </Alert>
       )}
 
       <FormField
-        label="Username"
+        label={t('dashboard.login.username')}
         type="text"
-        placeholder="Enter your username"
+        placeholder={t('dashboard.login.usernamePlaceholder')}
         error={errors.username?.message}
         required
         {...register('username')}
       />
 
       <FormField
-        label="Password"
+        label={t('dashboard.login.password')}
         type="password"
-        placeholder="Enter your password"
+        placeholder={t('dashboard.login.passwordPlaceholder')}
         error={errors.password?.message}
         required
         {...register('password')}
@@ -92,7 +97,7 @@ const LoginForm = () => {
         fullWidth
         isLoading={isLoading}
       >
-        Sign In
+        {t('dashboard.login.signIn')}
       </Button>
     </form>
   );

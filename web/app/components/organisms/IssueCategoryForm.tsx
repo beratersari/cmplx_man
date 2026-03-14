@@ -7,18 +7,22 @@ import { Button, Alert } from '../atoms';
 import { FormField } from '../molecules';
 import { IssueCategory, Complex } from '../../types';
 import { useState, useEffect } from 'react';
+import { useTranslation } from '../../locales';
 
-const categorySchema = z.object({
+const categorySchema = (t: any) => z.object({
   name: z
     .string()
-    .min(1, 'Name is required')
-    .max(100, 'Name must be less than 100 characters'),
+    .min(1, t('issueCategories.form.nameRequired') || 'Name is required')
+    .max(100, t('issueCategories.form.nameMaxLength') || 'Name must be less than 100 characters'),
   complexId: z
     .string()
-    .min(1, 'Please select a complex'),
+    .min(1, t('issueCategories.form.complexRequired') || 'Please select a complex'),
 });
 
-type CategoryFormData = z.infer<typeof categorySchema>;
+type CategoryFormData = {
+  name: string;
+  complexId: string;
+};
 
 interface IssueCategoryFormProps {
   complexes: Complex[];
@@ -37,6 +41,7 @@ const IssueCategoryForm: React.FC<IssueCategoryFormProps> = ({
   isLoading = false,
   isEdit = false,
 }) => {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -45,7 +50,7 @@ const IssueCategoryForm: React.FC<IssueCategoryFormProps> = ({
     reset,
     formState: { errors, isSubmitting },
   } = useForm<CategoryFormData>({
-    resolver: zodResolver(categorySchema),
+    resolver: zodResolver(categorySchema(t)),
     defaultValues: {
       name: initialData?.name || '',
       complexId: initialData?.complex_id?.toString() || '',
@@ -69,22 +74,22 @@ const IssueCategoryForm: React.FC<IssueCategoryFormProps> = ({
         complex_id: Number(data.complexId),
       });
     } catch (err: any) {
-      setError(err?.data?.detail || 'An error occurred. Please try again.');
+      setError(err?.data?.detail || t('common.errorOccurred') || 'An error occurred. Please try again.');
     }
   };
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4" noValidate>
       {error && (
-        <Alert variant="error" title="Error">
+        <Alert variant="error" title={t('common.error')}>
           {error}
         </Alert>
       )}
 
       <FormField
-        label="Category Name"
+        label={t('issueCategories.form.categoryName')}
         type="text"
-        placeholder="Enter category name"
+        placeholder={t('issueCategories.form.categoryNamePlaceholder')}
         error={errors.name?.message}
         required
         {...register('name')}
@@ -92,7 +97,7 @@ const IssueCategoryForm: React.FC<IssueCategoryFormProps> = ({
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Complex
+          {t('issueCategories.form.complex')}
           <span className="text-red-500 ml-1">*</span>
         </label>
         <select
@@ -101,7 +106,7 @@ const IssueCategoryForm: React.FC<IssueCategoryFormProps> = ({
             errors.complexId ? 'border-red-500' : 'border-gray-300'
           }`}
         >
-          <option value="">Select a complex</option>
+          <option value="">{t('issueCategories.form.selectComplex')}</option>
           {complexes.map((complex) => (
             <option key={complex.id} value={complex.id}>
               {complex.name}
@@ -122,14 +127,14 @@ const IssueCategoryForm: React.FC<IssueCategoryFormProps> = ({
           onClick={onCancel}
           disabled={isLoading || isSubmitting}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           type="submit"
           variant="primary"
           isLoading={isLoading || isSubmitting}
         >
-          {isEdit ? 'Update Category' : 'Create Category'}
+          {isEdit ? t('issueCategories.form.updateCategory') : t('issueCategories.form.createCategory')}
         </Button>
       </div>
     </form>

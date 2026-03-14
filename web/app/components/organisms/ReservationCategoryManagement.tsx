@@ -13,8 +13,10 @@ import {
   useDeleteReservationCategoryMutation,
 } from '../../store/apiSlice';
 import { ReservationCategory, Complex } from '../../types';
+import { useTranslation } from '../../locales';
 
 const ReservationCategoryManagement: React.FC = () => {
+  const { t } = useTranslation();
   // State
   const [searchTerm, setSearchTerm] = useState('');
   const [complexFilter, setComplexFilter] = useState('');
@@ -84,7 +86,7 @@ const ReservationCategoryManagement: React.FC = () => {
       setSelectedCategory(null);
       refetch();
     } catch (err: any) {
-      setDeleteError(err?.data?.detail || 'Failed to delete category');
+      setDeleteError(err?.data?.detail || t('reservationCategories.deleteError') || 'Failed to delete category');
     }
   };
 
@@ -113,31 +115,31 @@ const ReservationCategoryManagement: React.FC = () => {
     },
     {
       key: 'name',
-      header: 'Category Name',
+      header: t('reservationCategories.categoryName'),
       render: (category) => (
         <span className="font-medium text-gray-900">{category.name}</span>
       ),
     },
     {
       key: 'complex',
-      header: 'Complex',
+      header: t('common.complex') || 'Complex',
       render: (category) => {
         const complex = complexes?.find(c => c.id === category.complex_id);
         return (
-          <span className="text-gray-600">{complex?.name || `Complex ${category.complex_id}`}</span>
+          <span className="text-gray-600">{complex?.name || `${t('common.complex') || 'Complex'} ${category.complex_id}`}</span>
         );
       },
     },
     {
       key: 'created_date',
-      header: 'Created',
+      header: t('common.created'),
       render: (category) => (
         <span className="text-gray-500">{formatDate(category.created_date)}</span>
       ),
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('common.status'),
       render: (category) => (
         <span
           className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -146,13 +148,13 @@ const ReservationCategoryManagement: React.FC = () => {
               : 'bg-red-100 text-red-800'
           }`}
         >
-          {category.is_active ? 'Active' : 'Inactive'}
+          {category.is_active ? t('common.active') || 'Active' : t('common.inactive') || 'Inactive'}
         </span>
       ),
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('common.actions'),
       className: 'w-32',
       render: (category) => (
         <div className="flex items-center gap-2">
@@ -163,7 +165,7 @@ const ReservationCategoryManagement: React.FC = () => {
             }}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
-            Edit
+            {t('common.edit')}
           </button>
           <button
             onClick={(e) => {
@@ -172,7 +174,7 @@ const ReservationCategoryManagement: React.FC = () => {
             }}
             className="text-red-600 hover:text-red-800 text-sm font-medium"
           >
-            Delete
+            {t('common.delete')}
           </button>
         </div>
       ),
@@ -186,9 +188,9 @@ const ReservationCategoryManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Reservation Categories</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('reservationCategories.title')}</h2>
           <p className="text-gray-600 mt-1">
-            Manage reservation categories for complexes
+            {t('reservationCategories.subtitle')}
           </p>
         </div>
         <Button
@@ -198,7 +200,7 @@ const ReservationCategoryManagement: React.FC = () => {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          New Category
+          {t('reservationCategories.newCategory')}
         </Button>
       </div>
 
@@ -209,11 +211,11 @@ const ReservationCategoryManagement: React.FC = () => {
           setSearchTerm(value);
           setCurrentPage(1);
         }}
-        searchPlaceholder="Search categories by name..."
+        searchPlaceholder={t('reservationCategories.searchPlaceholder')}
         filters={[
           {
             key: 'complex',
-            label: 'All Complexes',
+            label: t('payments.allComplexes'),
             value: complexFilter,
             onChange: (value) => {
               setComplexFilter(value);
@@ -227,15 +229,15 @@ const ReservationCategoryManagement: React.FC = () => {
       {/* Active Filters Display */}
       {complexFilter && selectedComplex && (
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-gray-500">Active filter:</span>
+          <span className="text-gray-500">{t('common.activeFilter')}:</span>
           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-            Complex: {selectedComplex.name}
+            {t('common.complex') || 'Complex'}: {selectedComplex.name}
           </span>
           <button
             onClick={() => setComplexFilter('')}
             className="text-blue-600 hover:text-blue-800 text-xs underline"
           >
-            Clear
+            {t('common.clear')}
           </button>
         </div>
       )}
@@ -251,7 +253,7 @@ const ReservationCategoryManagement: React.FC = () => {
             columns={columns}
             data={paginatedData}
             keyExtractor={(category) => category.id}
-            emptyMessage="No reservation categories found"
+            emptyMessage={t('reservationCategories.noCategoriesFound')}
           />
           <Pagination
             currentPage={currentPage}
@@ -270,7 +272,7 @@ const ReservationCategoryManagement: React.FC = () => {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Create New Reservation Category"
+        title={t('reservationCategories.createCategory')}
         size="md"
       >
         <ReservationCategoryForm
@@ -288,7 +290,7 @@ const ReservationCategoryManagement: React.FC = () => {
           setIsEditModalOpen(false);
           setSelectedCategory(null);
         }}
-        title="Edit Reservation Category"
+        title={t('reservationCategories.editCategory')}
         size="md"
       >
         <ReservationCategoryForm
@@ -312,18 +314,18 @@ const ReservationCategoryManagement: React.FC = () => {
           setSelectedCategory(null);
           setDeleteError(null);
         }}
-        title="Delete Reservation Category"
+        title={t('reservationCategories.deleteCategory')}
         size="sm"
       >
         <div className="space-y-4">
           {deleteError && (
-            <Alert variant="error" title="Error">
+            <Alert variant="error" title={t('common.error')}>
               {deleteError}
             </Alert>
           )}
           <p className="text-gray-600">
-            Are you sure you want to delete category <strong>{selectedCategory?.name}</strong>?
-            This action cannot be undone.
+            {t('reservationCategories.deleteConfirmMessage') || 'Are you sure you want to delete category'} <strong>{selectedCategory?.name}</strong>?
+            {t('complexes.deleteConfirmNote')}
           </p>
           <div className="flex justify-end gap-3">
             <Button
@@ -335,14 +337,14 @@ const ReservationCategoryManagement: React.FC = () => {
               }}
               disabled={isDeleting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="danger"
               onClick={handleDelete}
               isLoading={isDeleting}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         </div>

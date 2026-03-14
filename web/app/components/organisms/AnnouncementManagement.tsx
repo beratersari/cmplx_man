@@ -18,12 +18,14 @@ import {
   useAddAnnouncementCommentMutation,
 } from '../../store/apiSlice';
 import { Announcement, Complex } from '../../types';
+import { useTranslation } from '../../locales';
 
 interface AnnouncementWithComplex extends Announcement {
   complex?: Complex;
 }
 
 const AnnouncementManagement: React.FC = () => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [complexFilter, setComplexFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,7 +96,7 @@ const AnnouncementManagement: React.FC = () => {
       setIsCreateModalOpen(false);
       refetch();
     } catch (err: any) {
-      setError(err?.data?.detail || 'Failed to create announcement');
+      setError(err?.data?.detail || t('announcements.createError') || 'Failed to create announcement');
     }
   };
 
@@ -107,7 +109,7 @@ const AnnouncementManagement: React.FC = () => {
       setSelectedAnnouncement(null);
       refetch();
     } catch (err: any) {
-      setError(err?.data?.detail || 'Failed to update announcement');
+      setError(err?.data?.detail || t('announcements.updateError') || 'Failed to update announcement');
     }
   };
 
@@ -120,7 +122,7 @@ const AnnouncementManagement: React.FC = () => {
       setSelectedAnnouncement(null);
       refetch();
     } catch (err: any) {
-      setDeleteError(err?.data?.detail || 'Failed to delete announcement');
+      setDeleteError(err?.data?.detail || t('announcements.deleteError') || 'Failed to delete announcement');
     }
   };
 
@@ -167,7 +169,7 @@ const AnnouncementManagement: React.FC = () => {
     },
     {
       key: 'title',
-      header: 'Title',
+      header: t('announcements.announcementTitle'),
       render: (announcement) => (
         <div>
           <span className="font-medium text-gray-900">{announcement.title}</span>
@@ -179,27 +181,27 @@ const AnnouncementManagement: React.FC = () => {
     },
     {
       key: 'complex',
-      header: 'Complex',
+      header: t('common.complex') || 'Complex',
       render: (announcement) => (
-        <span className="text-gray-600">{announcement.complex?.name || 'Unknown'}</span>
+        <span className="text-gray-600">{announcement.complex?.name || t('common.unknown') || 'Unknown'}</span>
       ),
     },
     {
       key: 'comments',
-      header: 'Comments',
+      header: t('announcements.comments'),
       render: (announcement) => (
         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
           announcement.comments_enabled
             ? 'bg-green-100 text-green-800'
             : 'bg-gray-100 text-gray-800'
         }`}>
-          {announcement.comments_enabled ? 'Enabled' : 'Disabled'}
+          {announcement.comments_enabled ? t('announcements.enabled') : t('announcements.disabled')}
         </span>
       ),
     },
     {
       key: 'created_date',
-      header: 'Created',
+      header: t('common.created'),
       render: (announcement) => (
         <span className="text-gray-500">
           {new Date(announcement.created_date).toLocaleDateString()}
@@ -208,7 +210,7 @@ const AnnouncementManagement: React.FC = () => {
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('common.actions'),
       className: 'w-48',
       render: (announcement) => (
         <div className="flex items-center gap-2">
@@ -219,7 +221,7 @@ const AnnouncementManagement: React.FC = () => {
             }}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
-            View
+            {t('common.view')}
           </button>
           <button
             onClick={(e) => {
@@ -228,7 +230,7 @@ const AnnouncementManagement: React.FC = () => {
             }}
             className="text-green-600 hover:text-green-800 text-sm font-medium"
           >
-            Edit
+            {t('common.edit')}
           </button>
           <button
             onClick={(e) => {
@@ -237,7 +239,7 @@ const AnnouncementManagement: React.FC = () => {
             }}
             className="text-red-600 hover:text-red-800 text-sm font-medium"
           >
-            Delete
+            {t('common.delete')}
           </button>
         </div>
       ),
@@ -251,9 +253,9 @@ const AnnouncementManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Announcement Management</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('announcements.title')}</h2>
           <p className="text-gray-600 mt-1">
-            Manage announcements across all complexes
+            {t('announcements.subtitle')}
           </p>
         </div>
         <Button
@@ -263,7 +265,7 @@ const AnnouncementManagement: React.FC = () => {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Create Announcement
+          {t('announcements.createAnnouncement')}
         </Button>
       </div>
 
@@ -274,11 +276,11 @@ const AnnouncementManagement: React.FC = () => {
           setSearchTerm(value);
           setCurrentPage(1);
         }}
-        searchPlaceholder="Search announcements..."
+        searchPlaceholder={t('announcements.searchPlaceholder')}
         filters={[
           {
             key: 'complex',
-            label: 'All Complexes',
+            label: t('payments.allComplexes'),
             value: complexFilter,
             onChange: (value) => {
               setComplexFilter(value);
@@ -300,7 +302,7 @@ const AnnouncementManagement: React.FC = () => {
             columns={columns}
             data={paginatedData}
             keyExtractor={(announcement) => announcement.id}
-            emptyMessage="No announcements found"
+            emptyMessage={t('announcements.noAnnouncementsFound')}
           />
           <Pagination
             currentPage={currentPage}
@@ -322,11 +324,11 @@ const AnnouncementManagement: React.FC = () => {
           setIsCreateModalOpen(false);
           setError(null);
         }}
-        title="Create New Announcement"
+        title={t('announcements.newAnnouncement')}
         size="lg"
       >
         {error && (
-          <Alert variant="error" title="Error">
+          <Alert variant="error" title={t('common.error')}>
             {error}
           </Alert>
         )}
@@ -355,11 +357,11 @@ const AnnouncementManagement: React.FC = () => {
           setSelectedAnnouncement(null);
           setError(null);
         }}
-        title="Edit Announcement"
+        title={t('announcements.editAnnouncement')}
         size="lg"
       >
         {error && (
-          <Alert variant="error" title="Error">
+          <Alert variant="error" title={t('common.error')}>
             {error}
           </Alert>
         )}
@@ -406,18 +408,18 @@ const AnnouncementManagement: React.FC = () => {
           setSelectedAnnouncement(null);
           setDeleteError(null);
         }}
-        title="Delete Announcement"
+        title={t('announcements.deleteAnnouncement')}
         size="sm"
       >
         <div className="space-y-4">
           {deleteError && (
-            <Alert variant="error" title="Error">
+            <Alert variant="error" title={t('common.error')}>
               {deleteError}
             </Alert>
           )}
           <p className="text-gray-600">
-            Are you sure you want to delete <strong>{selectedAnnouncement?.title}</strong>?
-            This action cannot be undone.
+            {t('complexes.deleteConfirmMessage')} <strong>{selectedAnnouncement?.title}</strong>?
+            {t('complexes.deleteConfirmNote')}
           </p>
           <div className="flex justify-end gap-3">
             <Button
@@ -429,14 +431,14 @@ const AnnouncementManagement: React.FC = () => {
               }}
               disabled={isDeleting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="danger"
               onClick={handleDelete}
               isLoading={isDeleting}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         </div>

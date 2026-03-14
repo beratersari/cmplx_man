@@ -7,27 +7,34 @@ import { Button, Alert } from '../atoms';
 import { FormField } from '../molecules';
 import { Issue, Complex, IssueCategory, IssueStatus } from '../../types';
 import { useState, useEffect } from 'react';
+import { useTranslation } from '../../locales';
 
-const issueSchema = z.object({
+const issueSchema = (t: any) => z.object({
   title: z
     .string()
-    .min(3, 'Title must be at least 3 characters')
-    .max(100, 'Title must be less than 100 characters'),
+    .min(3, t('issues.form.titleMinLength') || 'Title must be at least 3 characters')
+    .max(100, t('issues.form.titleMaxLength') || 'Title must be less than 100 characters'),
   description: z
     .string()
-    .min(5, 'Description must be at least 5 characters'),
+    .min(5, t('issues.form.descriptionMinLength') || 'Description must be at least 5 characters'),
   categoryId: z
     .string()
-    .min(1, 'Please select a category'),
+    .min(1, t('issues.form.categoryRequired') || 'Please select a category'),
   complexId: z
     .string()
-    .min(1, 'Please select a complex'),
+    .min(1, t('issues.form.complexRequired') || 'Please select a complex'),
   status: z
     .enum(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'])
     .optional(),
 });
 
-type IssueFormData = z.infer<typeof issueSchema>;
+type IssueFormData = {
+  title: string;
+  description: string;
+  categoryId: string;
+  complexId: string;
+  status?: string;
+};
 
 interface IssueFormProps {
   complexes: Complex[];
@@ -48,6 +55,7 @@ const IssueForm: React.FC<IssueFormProps> = ({
   isLoading = false,
   isEdit = false,
 }) => {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -57,7 +65,7 @@ const IssueForm: React.FC<IssueFormProps> = ({
     watch,
     formState: { errors, isSubmitting },
   } = useForm<IssueFormData>({
-    resolver: zodResolver(issueSchema),
+    resolver: zodResolver(issueSchema(t)),
     defaultValues: {
       title: initialData?.title || '',
       description: initialData?.description || '',
@@ -102,7 +110,7 @@ const IssueForm: React.FC<IssueFormProps> = ({
 
       await onSubmit(submitData);
     } catch (err: any) {
-      setError(err?.data?.detail || 'An error occurred. Please try again.');
+      setError(err?.data?.detail || t('common.errorOccurred') || 'An error occurred. Please try again.');
     }
   };
 
@@ -114,15 +122,15 @@ const IssueForm: React.FC<IssueFormProps> = ({
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4" noValidate>
       {error && (
-        <Alert variant="error" title="Error">
+        <Alert variant="error" title={t('common.error')}>
           {error}
         </Alert>
       )}
 
       <FormField
-        label="Title"
+        label={t('issues.form.title')}
         type="text"
-        placeholder="Enter issue title"
+        placeholder={t('issues.form.titlePlaceholder')}
         error={errors.title?.message}
         required
         {...register('title')}
@@ -130,7 +138,7 @@ const IssueForm: React.FC<IssueFormProps> = ({
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Description
+          {t('issues.form.description')}
           <span className="text-red-500 ml-1">*</span>
         </label>
         <textarea
@@ -139,7 +147,7 @@ const IssueForm: React.FC<IssueFormProps> = ({
           className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
             errors.description ? 'border-red-500' : 'border-gray-300'
           }`}
-          placeholder="Enter issue description"
+          placeholder={t('issues.form.descriptionPlaceholder')}
         />
         {errors.description && (
           <p className="mt-1 text-sm text-red-600">
@@ -152,7 +160,7 @@ const IssueForm: React.FC<IssueFormProps> = ({
         <>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Complex
+              {t('issues.form.complex')}
               <span className="text-red-500 ml-1">*</span>
             </label>
             <select
@@ -161,7 +169,7 @@ const IssueForm: React.FC<IssueFormProps> = ({
                 errors.complexId ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-              <option value="">Select a complex</option>
+              <option value="">{t('issues.form.selectComplex')}</option>
               {complexes.map((complex) => (
                 <option key={complex.id} value={complex.id}>
                   {complex.name}
@@ -177,7 +185,7 @@ const IssueForm: React.FC<IssueFormProps> = ({
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category
+              {t('issues.form.category')}
               <span className="text-red-500 ml-1">*</span>
             </label>
             <select
@@ -186,7 +194,7 @@ const IssueForm: React.FC<IssueFormProps> = ({
                 errors.categoryId ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-              <option value="">Select a category</option>
+              <option value="">{t('issues.form.selectCategory')}</option>
               {filteredCategories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
@@ -200,7 +208,7 @@ const IssueForm: React.FC<IssueFormProps> = ({
             )}
             {selectedComplexId && filteredCategories.length === 0 && (
               <p className="mt-1 text-sm text-yellow-600">
-                No categories available for this complex
+                {t('issues.form.noCategoriesAvailable')}
               </p>
             )}
           </div>
@@ -210,7 +218,7 @@ const IssueForm: React.FC<IssueFormProps> = ({
       {isEdit && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Status
+            {t('common.status')}
           </label>
           <select
             {...register('status')}
@@ -218,10 +226,10 @@ const IssueForm: React.FC<IssueFormProps> = ({
               errors.status ? 'border-red-500' : 'border-gray-300'
             }`}
           >
-            <option value="OPEN">Open</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="RESOLVED">Resolved</option>
-            <option value="CLOSED">Closed</option>
+            <option value="OPEN">{t('issues.status.OPEN')}</option>
+            <option value="IN_PROGRESS">{t('issues.status.IN_PROGRESS')}</option>
+            <option value="RESOLVED">{t('issues.status.RESOLVED')}</option>
+            <option value="CLOSED">{t('issues.status.CLOSED')}</option>
           </select>
           {errors.status && (
             <p className="mt-1 text-sm text-red-600">
@@ -238,14 +246,14 @@ const IssueForm: React.FC<IssueFormProps> = ({
           onClick={onCancel}
           disabled={isLoading || isSubmitting}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           type="submit"
           variant="primary"
           isLoading={isLoading || isSubmitting}
         >
-          {isEdit ? 'Update Issue' : 'Create Issue'}
+          {isEdit ? t('issues.form.updateIssue') : t('issues.form.createIssue')}
         </Button>
       </div>
     </form>

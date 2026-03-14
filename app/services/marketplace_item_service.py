@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from app.repositories import MarketplaceItemRepository, MarketplaceCategoryRepository, ComplexRepository
 from app.models.models import UserModel, MarketplaceItemModel
 from app.core.entities import UserRole, MarketplaceItemStatus
-from app.api.v1.schemas import MarketplaceItemCreate, MarketplaceItemUpdate
+from app.api.v1.schemas import MarketplaceItemCreate, MarketplaceItemUpdate, AdminMarketplaceItemCreate
 from app.core.logging_config import logger
 
 
@@ -90,6 +90,63 @@ class MarketplaceItemService:
             self.item_repo.add_images(new_item, item_in.img_paths)
         
         logger.info(f"Marketplace item created successfully: {new_item.title} (ID: {new_item.id})")
+        return new_item
+    
+    def admin_create_item(
+        self, 
+        item_in: AdminMarketplaceItemCreate, 
+        current_user: UserModel
+    ) -> MarketplaceItemModel:
+        """
+        Admin endpoint to create a marketplace item in any complex.
+        """
+        logger.info(f"Admin {current_user.username} (ID: {current_user.id}) creating marketplace item: {item_in.title}")
+        
+        # Expire old items first
+        self._check_and_expire_items()
+        
+        # Validate complex exists
+        complex_obj = self.complex_repo.get_by_id(item_in.complex_id)
+        if not complex_obj:
+            logger.error(f"Item creation failed: Complex ID {item_in.complex_id} not found")
+            raise HTTPException(status_code=404, detail="Complex not found")
+        
+        # Validate category exists and belongs to the specified complex
+        category = self.category_repo.get_by_id(item_in.category_id)
+        if not category:
+            logger.error(f"Item creation failed: Category ID {item_in.category_id} not found")
+            raise HTTPException(status_code=404, detail="Category not found")
+        
+        if category.complex_id != item_in.complex_id:
+            logger.warning(f"Item creation failed: Category ID {item_in.category_id} is not in the specified complex")
+            raise HTTPException(status_code=400, detail="Category does not belong to the specified complex")
+        
+        # Get user's contact info (fallback to username if not set)
+        contact = current_user.contact or current_user.username
+        
+        # Store price as cents to avoid floating point issues
+        price_cents = int(item_in.price * 100)
+        
+        item_data = {
+            "category_id": item_in.category_id,
+            "user_id": current_user.id,
+            "username": current_user.username,
+            "contact": contact,
+            "title": item_in.title,
+            "description": item_in.description,
+            "price": price_cents,
+            "complex_id": item_in.complex_id,
+            "status": MarketplaceItemStatus.AVAILABLE,
+            "listed_date": datetime.utcnow(),
+        }
+        
+        new_item = self.item_repo.create(item_data, created_by=current_user.id)
+        
+        # Add images if provided
+        if item_in.img_paths:
+            self.item_repo.add_images(new_item, item_in.img_paths)
+        
+        logger.info(f"Admin marketplace item created successfully: {new_item.title} (ID: {new_item.id})")
         return new_item
     
     def get_item_by_id(self, item_id: int) -> MarketplaceItemModel:

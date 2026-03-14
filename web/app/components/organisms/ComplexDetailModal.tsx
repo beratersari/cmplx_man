@@ -3,6 +3,7 @@
 import { Modal, Spinner } from '../atoms';
 import { useGetComplexUsersQuery } from '../../store/apiSlice';
 import { Complex } from '../../types';
+import { useTranslation } from '../../locales';
 
 interface ComplexDetailModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ const ComplexDetailModal: React.FC<ComplexDetailModalProps> = ({
   onClose,
   complex,
 }) => {
+  const { t } = useTranslation();
   const { data: users, isLoading } = useGetComplexUsersQuery(
     { complexId: complex?.id || 0 },
     { skip: !complex?.id }
@@ -39,24 +41,24 @@ const ComplexDetailModal: React.FC<ComplexDetailModalProps> = ({
       <div className="space-y-6">
         {/* Complex Info */}
         <div className="bg-gray-50 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-gray-500 mb-2">Complex Details</h4>
+          <h4 className="text-sm font-medium text-gray-500 mb-2">{t('complexes.details') || 'Complex Details'}</h4>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-gray-500">ID</p>
               <p className="font-medium">{complex.id}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Address</p>
+              <p className="text-sm text-gray-500">{t('common.address')}</p>
               <p className="font-medium">{complex.address}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Created Date</p>
+              <p className="text-sm text-gray-500">{t('common.created')}</p>
               <p className="font-medium">
                 {new Date(complex.created_date).toLocaleDateString()}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Last Updated</p>
+              <p className="text-sm text-gray-500">{t('common.lastUpdated')}</p>
               <p className="font-medium">
                 {complex.updated_date
                   ? new Date(complex.updated_date).toLocaleDateString()
@@ -69,7 +71,7 @@ const ComplexDetailModal: React.FC<ComplexDetailModalProps> = ({
         {/* Users Section */}
         <div>
           <h4 className="text-sm font-medium text-gray-500 mb-3">
-            Assigned Users ({users?.length || 0})
+            {t('modals.building.assignedUsers')} ({users?.length || 0})
           </h4>
           {isLoading ? (
             <div className="flex justify-center py-8">
@@ -92,15 +94,15 @@ const ComplexDetailModal: React.FC<ComplexDetailModalProps> = ({
                         roleColors[user.role] || 'bg-gray-100 text-gray-800'
                       }`}
                     >
-                      {user.role}
+                      {t(`users.roles.${user.role}`) || user.role}
                     </span>
                     {user.is_active ? (
                       <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                        Active
+                        {t('common.active') || 'Active'}
                       </span>
                     ) : (
                       <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                        Inactive
+                        {t('common.inactive') || 'Inactive'}
                       </span>
                     )}
                   </div>
@@ -109,7 +111,7 @@ const ComplexDetailModal: React.FC<ComplexDetailModalProps> = ({
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
-              No users assigned to this complex
+              {t('complexes.noAssignedUsers') || 'No users assigned to this complex'}
             </div>
           )}
         </div>

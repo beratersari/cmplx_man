@@ -25,3 +25,9 @@ export { default as ReservationCategoryManagement } from './ReservationCategoryM
 export { default as ReservationCategoryForm } from './ReservationCategoryForm';
 export { default as ReservationManagement } from './ReservationManagement';
 export { default as ReservationForm } from './ReservationForm';
+export { default as MarketplaceCategoryManagement } from './MarketplaceCategoryManagement';
+export { default as MarketplaceCategoryForm } from './MarketplaceCategoryForm';
+export { default as MarketplaceItemManagement } from './MarketplaceItemManagement';
+export { default as MarketplaceItemForm } from './MarketplaceItemForm';
+export { default as PaymentManagement } from './PaymentManagement';
+export { default as PaymentForm } from './PaymentForm';

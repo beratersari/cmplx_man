@@ -15,8 +15,10 @@ import {
   useDeleteIssueMutation,
 } from '../../store/apiSlice';
 import { Issue, Complex, IssueCategory, User, IssueStatus } from '../../types';
+import { useTranslation } from '../../locales';
 
 const IssueManagement: React.FC = () => {
+  const { t } = useTranslation();
   // State
   const [searchTerm, setSearchTerm] = useState('');
   const [complexFilter, setComplexFilter] = useState('');
@@ -115,7 +117,7 @@ const IssueManagement: React.FC = () => {
       setSelectedIssue(null);
       refetch();
     } catch (err: any) {
-      setDeleteError(err?.data?.detail || 'Failed to delete issue');
+      setDeleteError(err?.data?.detail || t('issues.deleteError') || 'Failed to delete issue');
     }
   };
 
@@ -144,7 +146,7 @@ const IssueManagement: React.FC = () => {
     },
     {
       key: 'title',
-      header: 'Title',
+      header: t('issues.issueTitle'),
       render: (issue) => (
         <div>
           <span className="font-medium text-gray-900 block">{issue.title}</span>
@@ -154,57 +156,57 @@ const IssueManagement: React.FC = () => {
     },
     {
       key: 'category',
-      header: 'Category',
+      header: t('issues.category'),
       render: (issue) => {
         const category = categoryMap.get(issue.category_id);
         return (
-          <span className="text-gray-600">{category?.name || `Category ${issue.category_id}`}</span>
+          <span className="text-gray-600">{category?.name || `${t('issues.category')} ${issue.category_id}`}</span>
         );
       },
     },
     {
       key: 'reporter',
-      header: 'Reporter',
+      header: t('issues.reporter'),
       render: (issue) => {
         const reporter = userMap.get(issue.user_id);
         return (
-          <span className="text-gray-600">{reporter?.username || `User ${issue.user_id}`}</span>
+          <span className="text-gray-600">{reporter?.username || `${t('users.user')} ${issue.user_id}`}</span>
         );
       },
     },
     {
       key: 'complex',
-      header: 'Complex',
+      header: t('common.complex') || 'Complex',
       render: (issue) => {
         const complex = complexes?.find(c => c.id === issue.complex_id);
         return (
-          <span className="text-gray-600">{complex?.name || `Complex ${issue.complex_id}`}</span>
+          <span className="text-gray-600">{complex?.name || `${t('common.complex') || 'Complex'} ${issue.complex_id}`}</span>
         );
       },
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('common.status'),
       render: (issue) => (
         <span
           className={`px-2 py-1 text-xs font-medium rounded-full ${
             statusColors[issue.status]
           }`}
         >
-          {issue.status.replace('_', ' ')}
+          {t(`issues.status.${issue.status}`) || issue.status.replace('_', ' ')}
         </span>
       ),
     },
     {
       key: 'created_date',
-      header: 'Created',
+      header: t('common.created'),
       render: (issue) => (
         <span className="text-gray-500">{formatDate(issue.created_date)}</span>
       ),
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('common.actions'),
       className: 'w-48',
       render: (issue) => (
         <div className="flex items-center gap-2 flex-wrap">
@@ -218,7 +220,7 @@ const IssueManagement: React.FC = () => {
                   }}
                   className="text-yellow-600 hover:text-yellow-800 text-xs font-medium px-2 py-1 bg-yellow-50 rounded"
                 >
-                  Start
+                  {t('issues.start')}
                 </button>
               )}
               {issue.status === 'IN_PROGRESS' && (
@@ -229,7 +231,7 @@ const IssueManagement: React.FC = () => {
                   }}
                   className="text-green-600 hover:text-green-800 text-xs font-medium px-2 py-1 bg-green-50 rounded"
                 >
-                  Resolve
+                  {t('issues.resolve')}
                 </button>
               )}
               {(issue.status === 'RESOLVED' || issue.status === 'IN_PROGRESS') && (
@@ -240,7 +242,7 @@ const IssueManagement: React.FC = () => {
                   }}
                   className="text-gray-600 hover:text-gray-800 text-xs font-medium px-2 py-1 bg-gray-50 rounded"
                 >
-                  Close
+                  {t('issues.close')}
                 </button>
               )}
             </>
@@ -252,7 +254,7 @@ const IssueManagement: React.FC = () => {
             }}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
-            Edit
+            {t('common.edit')}
           </button>
           <button
             onClick={(e) => {
@@ -261,7 +263,7 @@ const IssueManagement: React.FC = () => {
             }}
             className="text-red-600 hover:text-red-800 text-sm font-medium"
           >
-            Delete
+            {t('common.delete')}
           </button>
         </div>
       ),
@@ -275,9 +277,9 @@ const IssueManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Issue Management</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('issues.title')}</h2>
           <p className="text-gray-600 mt-1">
-            Manage issues and requests from residents
+            {t('issues.subtitle')}
           </p>
         </div>
         <Button
@@ -287,7 +289,7 @@ const IssueManagement: React.FC = () => {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          New Issue
+          {t('issues.newIssue')}
         </Button>
       </div>
 
@@ -298,11 +300,11 @@ const IssueManagement: React.FC = () => {
           setSearchTerm(value);
           setCurrentPage(1);
         }}
-        searchPlaceholder="Search issues by title or description..."
+        searchPlaceholder={t('issues.searchPlaceholder')}
         filters={[
           {
             key: 'complex',
-            label: 'All Complexes',
+            label: t('payments.allComplexes'),
             value: complexFilter,
             onChange: (value) => {
               setComplexFilter(value);
@@ -312,17 +314,17 @@ const IssueManagement: React.FC = () => {
           },
           {
             key: 'status',
-            label: 'All Statuses',
+            label: t('issues.allStatuses'),
             value: statusFilter,
             onChange: (value) => {
               setStatusFilter(value);
               setCurrentPage(1);
             },
             options: [
-              { value: 'OPEN', label: 'Open' },
-              { value: 'IN_PROGRESS', label: 'In Progress' },
-              { value: 'RESOLVED', label: 'Resolved' },
-              { value: 'CLOSED', label: 'Closed' },
+              { value: 'OPEN', label: t('issues.status.OPEN') },
+              { value: 'IN_PROGRESS', label: t('issues.status.IN_PROGRESS') },
+              { value: 'RESOLVED', label: t('issues.status.RESOLVED') },
+              { value: 'CLOSED', label: t('issues.status.CLOSED') },
             ],
           },
         ]}
@@ -331,15 +333,15 @@ const IssueManagement: React.FC = () => {
       {/* Active Filters Display */}
       {(complexFilter || statusFilter) && (
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-gray-500">Active filters:</span>
+          <span className="text-gray-500">{t('common.activeFilter')}:</span>
           {complexFilter && selectedComplex && (
             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-              Complex: {selectedComplex.name}
+              {t('common.complex') || 'Complex'}: {selectedComplex.name}
             </span>
           )}
           {statusFilter && (
             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-              Status: {statusFilter.replace('_', ' ')}
+              {t('common.status')}: {t(`issues.status.${statusFilter}`) || statusFilter.replace('_', ' ')}
             </span>
           )}
           <button
@@ -349,7 +351,7 @@ const IssueManagement: React.FC = () => {
             }}
             className="text-blue-600 hover:text-blue-800 text-xs underline"
           >
-            Clear all
+            {t('common.clear')}
           </button>
         </div>
       )}
@@ -365,7 +367,7 @@ const IssueManagement: React.FC = () => {
             columns={columns}
             data={paginatedData}
             keyExtractor={(issue) => issue.id}
-            emptyMessage="No issues found"
+            emptyMessage={t('issues.noIssuesFound')}
           />
           <Pagination
             currentPage={currentPage}
@@ -384,7 +386,7 @@ const IssueManagement: React.FC = () => {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Create New Issue"
+        title={t('issues.form.createIssue')}
         size="lg"
       >
         <IssueForm
@@ -403,7 +405,7 @@ const IssueManagement: React.FC = () => {
           setIsEditModalOpen(false);
           setSelectedIssue(null);
         }}
-        title="Edit Issue"
+        title={t('issues.editIssue')}
         size="md"
       >
         <IssueForm
@@ -428,18 +430,18 @@ const IssueManagement: React.FC = () => {
           setSelectedIssue(null);
           setDeleteError(null);
         }}
-        title="Delete Issue"
+        title={t('issues.deleteIssue')}
         size="sm"
       >
         <div className="space-y-4">
           {deleteError && (
-            <Alert variant="error" title="Error">
+            <Alert variant="error" title={t('common.error')}>
               {deleteError}
             </Alert>
           )}
           <p className="text-gray-600">
-            Are you sure you want to delete issue <strong>{selectedIssue?.title}</strong>?
-            This action cannot be undone.
+            {t('issues.deleteConfirmMessage') || 'Are you sure you want to delete issue'} <strong>{selectedIssue?.title}</strong>?
+            {t('complexes.deleteConfirmNote')}
           </p>
           <div className="flex justify-end gap-3">
             <Button
@@ -451,14 +453,14 @@ const IssueManagement: React.FC = () => {
               }}
               disabled={isDeleting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="danger"
               onClick={handleDelete}
               isLoading={isDeleting}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         </div>

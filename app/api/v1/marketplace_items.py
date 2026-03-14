@@ -4,10 +4,10 @@ from typing import List, Optional
 
 from app.core.database import get_db
 from app.models.models import UserModel
-from app.core.entities import MarketplaceItemStatus
-from app.api.deps import get_current_user
+from app.core.entities import MarketplaceItemStatus, UserRole
+from app.api.deps import get_current_user, RoleChecker
 from app.services import MarketplaceItemService
-from .schemas import MarketplaceItemCreate, MarketplaceItemUpdate, MarketplaceItemOut, MarketplaceItemImageOut
+from .schemas import MarketplaceItemCreate, MarketplaceItemUpdate, MarketplaceItemOut, MarketplaceItemImageOut, AdminMarketplaceItemCreate
 
 router = APIRouter()
 
@@ -57,6 +57,20 @@ def create_item(
     """
     service = MarketplaceItemService(db)
     item = service.create_item(item_in, current_user)
+    return _convert_item_to_dict(item)
+
+
+@router.post("/admin", response_model=MarketplaceItemOut, summary="Admin: Create Marketplace Item", description="Creates a new marketplace item in a specific complex. Restricted to Admins only. Allows creating items in any complex in the system.")
+def admin_create_item(
+    item_in: AdminMarketplaceItemCreate,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(RoleChecker([UserRole.ADMIN]))
+):
+    """
+    Admin endpoint to create a marketplace item in any specific complex.
+    """
+    service = MarketplaceItemService(db)
+    item = service.admin_create_item(item_in, current_user)
     return _convert_item_to_dict(item)
 
 

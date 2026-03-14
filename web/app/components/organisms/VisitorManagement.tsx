@@ -14,8 +14,10 @@ import {
   useDeleteVisitorMutation,
 } from '../../store/apiSlice';
 import { Visitor, VisitorStatus, Complex } from '../../types';
+import { useTranslation } from '../../locales';
 
 const VisitorManagement: React.FC = () => {
+  const { t } = useTranslation();
   // State
   const [searchTerm, setSearchTerm] = useState('');
   const [complexFilter, setComplexFilter] = useState('');
@@ -101,7 +103,7 @@ const VisitorManagement: React.FC = () => {
       setSelectedVisitor(null);
       refetch();
     } catch (err: any) {
-      setDeleteError(err?.data?.detail || 'Failed to delete visitor');
+      setDeleteError(err?.data?.detail || t('visitors.deleteError') || 'Failed to delete visitor');
     }
   };
 
@@ -130,56 +132,56 @@ const VisitorManagement: React.FC = () => {
     },
     {
       key: 'name',
-      header: 'Visitor Name',
+      header: t('visitors.visitorName'),
       render: (visitor) => (
         <span className="font-medium text-gray-900">{visitor.name}</span>
       ),
     },
     {
       key: 'plate_number',
-      header: 'Plate Number',
+      header: t('visitors.plateNumber'),
       render: (visitor) => (
         <span className="text-gray-600">{visitor.plate_number || '-'}</span>
       ),
     },
     {
       key: 'complex',
-      header: 'Complex',
+      header: t('common.complex') || 'Complex',
       render: (visitor) => {
         const complex = complexes?.find(c => c.id === visitor.complex_id);
         return (
-          <span className="text-gray-600">{complex?.name || `Complex ${visitor.complex_id}`}</span>
+          <span className="text-gray-600">{complex?.name || `${t('common.complex') || 'Complex'} ${visitor.complex_id}`}</span>
         );
       },
     },
     {
       key: 'visit_date',
-      header: 'Visit Date',
+      header: t('visitors.visitDate'),
       render: (visitor) => (
         <span className="text-gray-500">{formatDate(visitor.visit_date)}</span>
       ),
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('common.status'),
       render: (visitor) => (
         <span
           className={`px-2 py-1 text-xs font-medium rounded-full ${
             statusColors[visitor.status]
           }`}
         >
-          {visitor.status.replace('_', ' ')}
+          {t(`visitors.status.${visitor.status}`) || visitor.status.replace('_', ' ')}
         </span>
       ),
     },
     {
       key: 'checkin_info',
-      header: 'Check-in/out',
+      header: t('visitors.checkInOut'),
       render: (visitor) => (
         <div className="text-xs text-gray-500">
           {visitor.status_updated_date ? (
             <div>
-              <div>{visitor.status === 'CHECKED_IN' ? 'Checked in:' : visitor.status === 'CHECKED_OUT' ? 'Checked out:' : 'Updated:'}</div>
+              <div>{visitor.status === 'CHECKED_IN' ? t('visitors.checkedIn') : visitor.status === 'CHECKED_OUT' ? t('visitors.checkedOut') : t('visitors.updated')}</div>
               <div>{formatDate(visitor.status_updated_date)}</div>
             </div>
           ) : (
@@ -190,7 +192,7 @@ const VisitorManagement: React.FC = () => {
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('common.actions'),
       className: 'w-64',
       render: (visitor) => (
         <div className="flex items-center gap-2 flex-wrap">
@@ -203,7 +205,7 @@ const VisitorManagement: React.FC = () => {
               disabled={isUpdatingStatus}
               className="text-green-600 hover:text-green-800 text-sm font-medium px-2 py-1 bg-green-50 rounded"
             >
-              Check In
+              {t('visitors.checkIn')}
             </button>
           )}
           {visitor.status === 'CHECKED_IN' && (
@@ -215,7 +217,7 @@ const VisitorManagement: React.FC = () => {
               disabled={isUpdatingStatus}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium px-2 py-1 bg-gray-50 rounded"
             >
-              Check Out
+              {t('visitors.checkOut')}
             </button>
           )}
           <button
@@ -225,7 +227,7 @@ const VisitorManagement: React.FC = () => {
             }}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
-            Edit
+            {t('common.edit')}
           </button>
           <button
             onClick={(e) => {
@@ -234,7 +236,7 @@ const VisitorManagement: React.FC = () => {
             }}
             className="text-red-600 hover:text-red-800 text-sm font-medium"
           >
-            Delete
+            {t('common.delete')}
           </button>
         </div>
       ),
@@ -248,9 +250,9 @@ const VisitorManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Visitor Registry</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('visitors.title')}</h2>
           <p className="text-gray-600 mt-1">
-            Manage visitor registrations, check-ins, and check-outs
+            {t('visitors.subtitle')}
           </p>
         </div>
         <Button
@@ -260,7 +262,7 @@ const VisitorManagement: React.FC = () => {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          New Visitor
+          {t('visitors.newVisitor')}
         </Button>
       </div>
 
@@ -271,11 +273,11 @@ const VisitorManagement: React.FC = () => {
           setSearchTerm(value);
           setCurrentPage(1);
         }}
-        searchPlaceholder="Search visitors by name or plate number..."
+        searchPlaceholder={t('visitors.searchPlaceholder')}
         filters={[
           {
             key: 'complex',
-            label: 'All Complexes',
+            label: t('payments.allComplexes'),
             value: complexFilter,
             onChange: (value) => {
               setComplexFilter(value);
@@ -285,7 +287,7 @@ const VisitorManagement: React.FC = () => {
           },
           {
             key: 'date',
-            label: 'Date Filter',
+            label: t('visitors.visitDate'),
             value: dateFilter,
             onChange: (value) => {
               setDateFilter(value);
@@ -296,17 +298,17 @@ const VisitorManagement: React.FC = () => {
           },
           {
             key: 'status',
-            label: 'All Statuses',
+            label: t('issues.allStatuses'),
             value: statusFilter,
             onChange: (value) => {
               setStatusFilter(value);
               setCurrentPage(1);
             },
             options: [
-              { value: 'PENDING', label: 'Pending' },
-              { value: 'CHECKED_IN', label: 'Checked In' },
-              { value: 'CHECKED_OUT', label: 'Checked Out' },
-              { value: 'NO_SHOW', label: 'No Show' },
+              { value: 'PENDING', label: t('visitors.status.PENDING') },
+              { value: 'CHECKED_IN', label: t('visitors.status.CHECKED_IN') },
+              { value: 'CHECKED_OUT', label: t('visitors.status.CHECKED_OUT') },
+              { value: 'NO_SHOW', label: t('visitors.status.NO_SHOW') },
             ],
           },
         ]}
@@ -315,20 +317,20 @@ const VisitorManagement: React.FC = () => {
       {/* Active Filters Display */}
       {(complexFilter || dateFilter || statusFilter) && (
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-gray-500">Active filters:</span>
+          <span className="text-gray-500">{t('common.activeFilter')}:</span>
           {complexFilter && selectedComplex && (
             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-              Complex: {selectedComplex.name}
+              {t('common.complex') || 'Complex'}: {selectedComplex.name}
             </span>
           )}
           {dateFilter && (
             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-              Date: {new Date(dateFilter).toLocaleDateString()}
+              {t('visitors.visitDate')}: {new Date(dateFilter).toLocaleDateString()}
             </span>
           )}
           {statusFilter && (
             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-              Status: {statusFilter.replace('_', ' ')}
+              {t('common.status')}: {t(`visitors.status.${statusFilter}`) || statusFilter.replace('_', ' ')}
             </span>
           )}
           <button
@@ -339,7 +341,7 @@ const VisitorManagement: React.FC = () => {
             }}
             className="text-blue-600 hover:text-blue-800 text-xs underline"
           >
-            Clear all
+            {t('common.clear')}
           </button>
         </div>
       )}
@@ -355,7 +357,7 @@ const VisitorManagement: React.FC = () => {
             columns={columns}
             data={paginatedData}
             keyExtractor={(visitor) => visitor.id}
-            emptyMessage="No visitors found"
+            emptyMessage={t('visitors.noVisitorsFound')}
           />
           <Pagination
             currentPage={currentPage}
@@ -374,7 +376,7 @@ const VisitorManagement: React.FC = () => {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Register New Visitor"
+        title={t('visitors.form.createVisitor')}
         size="md"
       >
         <VisitorForm
@@ -393,7 +395,7 @@ const VisitorManagement: React.FC = () => {
           setIsEditModalOpen(false);
           setSelectedVisitor(null);
         }}
-        title="Edit Visitor"
+        title={t('visitors.editVisitor')}
         size="md"
       >
         <VisitorForm
@@ -417,18 +419,18 @@ const VisitorManagement: React.FC = () => {
           setSelectedVisitor(null);
           setDeleteError(null);
         }}
-        title="Delete Visitor"
+        title={t('visitors.deleteVisitor')}
         size="sm"
       >
         <div className="space-y-4">
           {deleteError && (
-            <Alert variant="error" title="Error">
+            <Alert variant="error" title={t('common.error')}>
               {deleteError}
             </Alert>
           )}
           <p className="text-gray-600">
-            Are you sure you want to delete visitor <strong>{selectedVisitor?.name}</strong>?
-            This action cannot be undone.
+            {t('complexes.deleteConfirmMessage')} <strong>{selectedVisitor?.name}</strong>?
+            {t('complexes.deleteConfirmNote')}
           </p>
           <div className="flex justify-end gap-3">
             <Button
@@ -440,14 +442,14 @@ const VisitorManagement: React.FC = () => {
               }}
               disabled={isDeleting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="danger"
               onClick={handleDelete}
               isLoading={isDeleting}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         </div>

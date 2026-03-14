@@ -389,3 +389,167 @@ export interface ReservationOverlapStatsById {
   other_accepted_reservations_count: number;
   total_people_count: number;
 }
+
+// Payment Status
+export type PaymentStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+
+// Payment Target Type
+export type PaymentTargetType = 'ALL' | 'SPECIFIC';
+
+// Payment types
+export interface PaymentRecord {
+  id: number;
+  payment_id: number;
+  unit_number: string;
+  status: PaymentStatus;
+  paid_date: string | null;
+  created_date: string;
+  updated_date: string | null;
+}
+
+export interface Payment {
+  id: number;
+  title: string;
+  amount: number;
+  complex_id: number;
+  target_type: PaymentTargetType;
+  unit_numbers: string[];
+  due_date: string | null;
+  records: PaymentRecord[];
+  created_date: string;
+  created_by: number | null;
+  updated_date: string | null;
+  updated_by: number | null;
+  is_active: boolean;
+}
+
+export interface PaymentCreateForAll {
+  title: string;
+  amount: number;
+  due_date?: string;
+}
+
+export interface PaymentCreateForSpecific extends PaymentCreateForAll {
+  unit_numbers: string[];
+}
+
+export interface AdminPaymentCreateForAll extends PaymentCreateForAll {
+  complex_id: number;
+}
+
+export interface AdminPaymentCreateForSpecific extends PaymentCreateForSpecific {
+  complex_id: number;
+}
+
+export interface PaymentUpdate {
+  title?: string;
+  amount?: number;
+  due_date?: string;
+}
+
+export interface PaymentRecordStatusUpdate {
+  status: PaymentStatus;
+}
+
+export interface PaymentStats {
+  total_records: number;
+  pending_count: number;
+  paid_count: number;
+  overdue_count: number;
+  cancelled_count: number;
+  total_amount: number;
+  collected_amount: number;
+  pending_amount: number;
+}
+
+export interface PaymentRecordInBuilding {
+  id: number;
+  payment_id: number;
+  payment_title: string;
+  unit_number: string;
+  amount: number;
+  status: PaymentStatus;
+  due_date: string | null;
+  paid_date: string | null;
+}
+
+export interface PaymentsByBuilding {
+  building_id: number;
+  building_name: string;
+  records: PaymentRecordInBuilding[];
+}
+
+// Marketplace Item Status
+export type MarketplaceItemStatus = 'AVAILABLE' | 'SOLD' | 'RESERVED' | 'EXPIRED';
+
+// Marketplace Category types
+export interface MarketplaceCategory {
+  id: number;
+  name: string;
+  complex_id: number;
+  created_date: string;
+  created_by: number | null;
+  updated_date: string | null;
+  updated_by: number | null;
+  is_active: boolean;
+}
+
+export interface MarketplaceCategoryCreate {
+  name: string;
+}
+
+export interface AdminMarketplaceCategoryCreate extends MarketplaceCategoryCreate {
+  complex_id: number;
+}
+
+export interface MarketplaceCategoryUpdate {
+  name?: string;
+}
+
+// Marketplace Item types
+export interface MarketplaceItemImage {
+  id: number;
+  img_path: string;
+}
+
+export interface MarketplaceItem {
+  id: number;
+  category_id: number;
+  user_id: number;
+  username: string;
+  contact: string;
+  title: string;
+  description: string;
+  price: number;
+  complex_id: number;
+  status: MarketplaceItemStatus;
+  listed_date: string;
+  images: MarketplaceItemImage[];
+  created_date: string;
+  created_by: number | null;
+  updated_date: string | null;
+  updated_by: number | null;
+  is_active: boolean;
+}
+
+export interface MarketplaceItemCreate {
+  category_id: number;
+  title: string;
+  description: string;
+  price: number;
+  img_paths?: string[];
+}
+
+export interface AdminMarketplaceItemCreate extends MarketplaceItemCreate {
+  complex_id: number;
+}
+
+export interface MarketplaceItemUpdate {
+  category_id?: number;
+  title?: string;
+  description?: string;
+  price?: number;
+  status?: MarketplaceItemStatus;
+  img_paths?: string[];
+  relist?: boolean;
+}

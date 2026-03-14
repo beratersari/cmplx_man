@@ -4,18 +4,18 @@ import { useState, useMemo } from 'react';
 import { Button, Modal, Pagination, Spinner, Alert } from '../atoms';
 import { Table, SearchFilter } from '../molecules';
 import { Column } from '../molecules/Table';
-import IssueCategoryForm from './IssueCategoryForm';
+import MarketplaceCategoryForm from './MarketplaceCategoryForm';
 import {
-  useGetIssueCategoriesQuery,
+  useGetMarketplaceCategoriesQuery,
   useGetComplexesQuery,
-  useAdminCreateIssueCategoryMutation,
-  useAdminUpdateIssueCategoryMutation,
-  useDeleteIssueCategoryMutation,
+  useAdminCreateMarketplaceCategoryMutation,
+  useAdminUpdateMarketplaceCategoryMutation,
+  useDeleteMarketplaceCategoryMutation,
 } from '../../store/apiSlice';
-import { IssueCategory, Complex } from '../../types';
+import { MarketplaceCategory, Complex } from '../../types';
 import { useTranslation } from '../../locales';
 
-const IssueCategoryManagement: React.FC = () => {
+const MarketplaceCategoryManagement: React.FC = () => {
   const { t } = useTranslation();
   // State
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,17 +25,17 @@ const IssueCategoryManagement: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<IssueCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<MarketplaceCategory | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // API hooks
   const { data: complexes, isLoading: complexesLoading } = useGetComplexesQuery({});
-  const { data: categories, isLoading: categoriesLoading, refetch } = useGetIssueCategoriesQuery({
+  const { data: categories, isLoading: categoriesLoading, refetch } = useGetMarketplaceCategoriesQuery({
     complexId: complexFilter ? Number(complexFilter) : undefined,
   });
-  const [createCategory, { isLoading: isCreating }] = useAdminCreateIssueCategoryMutation();
-  const [updateCategory, { isLoading: isUpdating }] = useAdminUpdateIssueCategoryMutation();
-  const [deleteCategory, { isLoading: isDeleting }] = useDeleteIssueCategoryMutation();
+  const [createCategory, { isLoading: isCreating }] = useAdminCreateMarketplaceCategoryMutation();
+  const [updateCategory, { isLoading: isUpdating }] = useAdminUpdateMarketplaceCategoryMutation();
+  const [deleteCategory, { isLoading: isDeleting }] = useDeleteMarketplaceCategoryMutation();
 
   // Get selected complex name
   const selectedComplex = useMemo(() => {
@@ -86,16 +86,16 @@ const IssueCategoryManagement: React.FC = () => {
       setSelectedCategory(null);
       refetch();
     } catch (err: any) {
-      setDeleteError(err?.data?.detail || t('issueCategories.deleteError') || 'Failed to delete category');
+      setDeleteError(err?.data?.detail || t('marketplace.categories.deleteError') || 'Failed to delete category');
     }
   };
 
-  const openEditModal = (category: IssueCategory) => {
+  const openEditModal = (category: MarketplaceCategory) => {
     setSelectedCategory(category);
     setIsEditModalOpen(true);
   };
 
-  const openDeleteModal = (category: IssueCategory) => {
+  const openDeleteModal = (category: MarketplaceCategory) => {
     setSelectedCategory(category);
     setDeleteError(null);
     setIsDeleteModalOpen(true);
@@ -107,7 +107,7 @@ const IssueCategoryManagement: React.FC = () => {
   };
 
   // Table columns
-  const columns: Column<IssueCategory>[] = [
+  const columns: Column<MarketplaceCategory>[] = [
     {
       key: 'id',
       header: 'ID',
@@ -115,7 +115,7 @@ const IssueCategoryManagement: React.FC = () => {
     },
     {
       key: 'name',
-      header: t('issueCategories.categoryName'),
+      header: t('marketplace.categories.categoryName'),
       render: (category) => (
         <span className="font-medium text-gray-900">{category.name}</span>
       ),
@@ -188,9 +188,9 @@ const IssueCategoryManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">{t('issueCategories.title')}</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('marketplace.categories.title')}</h2>
           <p className="text-gray-600 mt-1">
-            {t('issueCategories.subtitle')}
+            {t('marketplace.categories.subtitle')}
           </p>
         </div>
         <Button
@@ -200,7 +200,7 @@ const IssueCategoryManagement: React.FC = () => {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          {t('issueCategories.newCategory')}
+          {t('marketplace.categories.newCategory')}
         </Button>
       </div>
 
@@ -211,7 +211,7 @@ const IssueCategoryManagement: React.FC = () => {
           setSearchTerm(value);
           setCurrentPage(1);
         }}
-        searchPlaceholder={t('issueCategories.searchPlaceholder')}
+        searchPlaceholder={t('marketplace.categories.searchPlaceholder')}
         filters={[
           {
             key: 'complex',
@@ -253,7 +253,7 @@ const IssueCategoryManagement: React.FC = () => {
             columns={columns}
             data={paginatedData}
             keyExtractor={(category) => category.id}
-            emptyMessage={t('issueCategories.noCategoriesFound')}
+            emptyMessage={t('marketplace.categories.noCategoriesFound')}
           />
           <Pagination
             currentPage={currentPage}
@@ -272,10 +272,10 @@ const IssueCategoryManagement: React.FC = () => {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title={t('issueCategories.createCategory')}
+        title={t('marketplace.categories.createCategory')}
         size="md"
       >
-        <IssueCategoryForm
+        <MarketplaceCategoryForm
           complexes={complexes || []}
           onSubmit={handleCreate}
           onCancel={() => setIsCreateModalOpen(false)}
@@ -290,10 +290,10 @@ const IssueCategoryManagement: React.FC = () => {
           setIsEditModalOpen(false);
           setSelectedCategory(null);
         }}
-        title={t('issueCategories.editCategory')}
+        title={t('marketplace.categories.editCategory')}
         size="md"
       >
-        <IssueCategoryForm
+        <MarketplaceCategoryForm
           complexes={complexes || []}
           initialData={selectedCategory}
           onSubmit={handleEdit}
@@ -314,7 +314,7 @@ const IssueCategoryManagement: React.FC = () => {
           setSelectedCategory(null);
           setDeleteError(null);
         }}
-        title={t('issueCategories.deleteCategory')}
+        title={t('marketplace.categories.deleteCategory')}
         size="sm"
       >
         <div className="space-y-4">
@@ -324,8 +324,8 @@ const IssueCategoryManagement: React.FC = () => {
             </Alert>
           )}
           <p className="text-gray-600">
-            {t('issueCategories.deleteConfirmMessage') || 'Are you sure you want to delete category'} <strong>{selectedCategory?.name}</strong>?
-            {t('complexes.deleteConfirmNote')}
+            {t('marketplace.categories.deleteConfirmMessage')} <strong>{selectedCategory?.name}</strong>?
+            {t('marketplace.categories.deleteConfirmNote')}
           </p>
           <div className="flex justify-end gap-3">
             <Button
@@ -353,4 +353,4 @@ const IssueCategoryManagement: React.FC = () => {
   );
 };
 
-export default IssueCategoryManagement;
+export default MarketplaceCategoryManagement;

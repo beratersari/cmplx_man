@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { useTranslation } from '../../locales';
 
 export interface Column<T> {
   key: string;
@@ -23,9 +24,12 @@ function Table<T>({
   data,
   keyExtractor,
   isLoading = false,
-  emptyMessage = 'No data available',
+  emptyMessage,
   onRowClick,
 }: TableProps<T>) {
+  const { t } = useTranslation();
+  const displayEmptyMessage = emptyMessage || t('table.noData');
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -68,7 +72,7 @@ function Table<T>({
                   colSpan={columns.length}
                   className="px-6 py-12 text-center text-gray-500"
                 >
-                  {emptyMessage}
+                  {displayEmptyMessage}
                 </td>
               </tr>
             ) : (
