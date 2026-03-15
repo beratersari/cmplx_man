@@ -6,7 +6,7 @@ from app.core.security import get_password_hash
 from app.core.entities import UserRole
 from app.core.mock_data import seed_mock_data
 from app.core.rate_limiter import rate_limit_middleware
-from app.api.v1 import auth, users, complexes, buildings, announcements, vehicles, issues, visitors, categories, reservation_categories, reservations, marketplace_categories, marketplace_items, payments, notifications
+from app.api.v1 import auth, users, complexes, buildings, announcements, vehicles, issues, visitors, categories, reservation_categories, reservations, marketplace_categories, marketplace_items, payments, notifications, engagement
 from app.core.logging_config import logger
 import time
 
@@ -96,6 +96,7 @@ app.include_router(marketplace_categories.router, prefix="/api/v1/marketplace-ca
 app.include_router(marketplace_items.router, prefix="/api/v1/marketplace-items", tags=["Marketplace Items"])
 app.include_router(payments.router, prefix="/api/v1/payments", tags=["Payments"])
 app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["Notifications"])
+app.include_router(engagement.router, prefix="/api/v1/engagement", tags=["Engagement"])
 
 
 @app.on_event("startup")

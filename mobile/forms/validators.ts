@@ -132,6 +132,12 @@ export const getValidationRulesForField = (
       );
       break;
 
+    case FormFieldName.IssuePriority:
+      rules.push(
+        { type: ValidationType.Required, messageKey: 'form.validation.required', params: { field: t('issues.form.priority') } }
+      );
+      break;
+
     // Reservation fields
     case FormFieldName.ReservationDate:
       rules.push(

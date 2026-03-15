@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.models.models import UserModel
-from app.core.entities import UserRole, ReservationStatus, VisitorStatus
+from app.core.entities import UserRole, ReservationStatus, VisitorStatus, IssuePriority
 from app.services import (
     ComplexService, BuildingService, UserService, 
     AnnouncementService, VehicleService, VisitorService,
@@ -353,19 +353,19 @@ def seed_mock_data(db: Session):
 
     # 10. Create Issues (Residents create issues)
     issue_service.create_issue(
-        IssueCreate(title="Leaking faucet in kitchen", description="The kitchen faucet has been leaking for 3 days.", category_id=cat_maintenance_a.id),
+        IssueCreate(title="Leaking faucet in kitchen", description="The kitchen faucet has been leaking for 3 days.", category_id=cat_maintenance_a.id, priority=IssuePriority.HIGH),
         resident1
     )
     issue_service.create_issue(
-        IssueCreate(title="Suspicious person at gate", description="Saw an unknown person trying to enter through the side gate.", category_id=cat_security_a.id),
+        IssueCreate(title="Suspicious person at gate", description="Saw an unknown person trying to enter through the side gate.", category_id=cat_security_a.id, priority=IssuePriority.URGENT),
         resident2
     )
     issue_service.create_issue(
-        IssueCreate(title="Loud music from upstairs", description="Neighbor plays loud music after midnight.", category_id=cat_noise_a.id),
+        IssueCreate(title="Loud music from upstairs", description="Neighbor plays loud music after midnight.", category_id=cat_noise_a.id, priority=IssuePriority.MEDIUM),
         resident3
     )
     issue_service.create_issue(
-        IssueCreate(title="Parking spot occupied", description="Someone is parking in my assigned spot.", category_id=cat_parking_b.id),
+        IssueCreate(title="Parking spot occupied", description="Someone is parking in my assigned spot.", category_id=cat_parking_b.id, priority=IssuePriority.LOW),
         resident4
     )
 

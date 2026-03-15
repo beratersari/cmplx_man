@@ -35,6 +35,7 @@ export enum TagType {
   Vehicle = 'Vehicle',
   Payment = 'Payment',
   PaymentRecord = 'PaymentRecord',
+  Engagement = 'Engagement',
 }
 
 /**
@@ -69,6 +70,7 @@ export enum FormFieldName {
   IssueTitle = 'issueTitle',
   IssueDescription = 'issueDescription',
   IssueCategory = 'issueCategory',
+  IssuePriority = 'issuePriority',
   
   // Reservation fields
   ReservationDate = 'reservationDate',

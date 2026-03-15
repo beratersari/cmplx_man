@@ -60,6 +60,16 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Ionicons size={24} name="notifications-outline" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="engagement"
+        options={{
+          title: t('navigation.engagement'),
+          tabBarIcon: ({ color }) => <Ionicons size={24} name="pulse-outline" color={color} />,
+        }}
+      />
+      <Tabs.Screen name="announcements/[id]" options={{ href: null }} />
+      <Tabs.Screen name="issues/[id]" options={{ href: null }} />
+      <Tabs.Screen name="issues/new" options={{ href: null }} />
     </Tabs>
   );
 }

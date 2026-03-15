@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from enum import Enum
 from app.core.database import Base
-from app.core.entities import UserRole, IssueStatus, ReservationStatus, MarketplaceItemStatus, VisitorStatus, PaymentStatus, PaymentTargetType
+from app.core.entities import UserRole, IssueStatus, IssuePriority, ReservationStatus, MarketplaceItemStatus, VisitorStatus, PaymentStatus, PaymentTargetType
 
 class AuditMixin:
     created_date = Column(DateTime, default=datetime.utcnow)
@@ -89,10 +89,12 @@ class CommentModel(Base, AuditMixin):
 
     id = Column(Integer, primary_key=True, index=True)
     content = Column(String)
-    announcement_id = Column(Integer, ForeignKey("announcements.id"))
+    announcement_id = Column(Integer, ForeignKey("announcements.id"), nullable=True)
+    issue_id = Column(Integer, ForeignKey("issues.id"), nullable=True)
     parent_id = Column(Integer, ForeignKey("comments.id"), nullable=True)
 
     announcement = relationship("AnnouncementModel", back_populates="comments")
+    issue = relationship("IssueModel", back_populates="comments")
     parent = relationship("CommentModel", remote_side=[id], back_populates="replies")
     replies = relationship("CommentModel", back_populates="parent", cascade="all, delete-orphan")
     emotions = relationship("CommentEmotionModel", back_populates="comment")
@@ -170,11 +172,13 @@ class IssueModel(Base, AuditMixin):
     user_id = Column(Integer, ForeignKey("users.id"))
     category_id = Column(Integer, ForeignKey("issue_categories.id"), nullable=False)
     status = Column(SQLEnum(IssueStatus), default=IssueStatus.OPEN)
+    priority = Column(SQLEnum(IssuePriority), default=IssuePriority.MEDIUM)
 
     complex = relationship("ResidentialComplexModel", back_populates="issues")
     user = relationship("UserModel", back_populates="issues")
     issue_category = relationship("IssueCategoryModel", back_populates="issues")
     images = relationship("IssueImageModel", back_populates="issue", cascade="all, delete-orphan")
+    comments = relationship("CommentModel", back_populates="issue", cascade="all, delete-orphan")
 
 class IssueImageModel(Base):
     __tablename__ = "issue_images"

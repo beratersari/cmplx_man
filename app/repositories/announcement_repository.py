@@ -112,6 +112,21 @@ class AnnouncementRepository(BaseRepository[AnnouncementModel]):
         else:
             query = query.filter(CommentModel.parent_id == None)
         return query.all()
+
+    def get_comments_by_issue(
+        self,
+        issue_id: int,
+        parent_id: Optional[int] = None
+    ) -> List[CommentModel]:
+        """Get comments for an issue, optionally filtered by parent."""
+        query = self.db.query(CommentModel).filter(
+            CommentModel.issue_id == issue_id
+        )
+        if parent_id is not None:
+            query = query.filter(CommentModel.parent_id == parent_id)
+        else:
+            query = query.filter(CommentModel.parent_id == None)
+        return query.all()
     
     def get_comment_by_id(self, comment_id: int) -> Optional[CommentModel]:
         """Get a comment by ID."""
@@ -121,15 +136,17 @@ class AnnouncementRepository(BaseRepository[AnnouncementModel]):
     
     def create_comment(
         self, 
-        announcement_id: int,
+        announcement_id: Optional[int],
         content: str,
         user_id: int,
-        parent_id: Optional[int] = None
+        parent_id: Optional[int] = None,
+        issue_id: Optional[int] = None
     ) -> CommentModel:
         """Create a new comment."""
         comment = CommentModel(
             content=content,
             announcement_id=announcement_id,
+            issue_id=issue_id,
             parent_id=parent_id,
             created_by=user_id
         )

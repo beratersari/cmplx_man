@@ -8,6 +8,7 @@ from .schemas import (
     AnnouncementBase, AnnouncementCreate, AnnouncementOut,
     EmotionCount, UserReaction, EmotionCreate,
     CommentBase, CommentCreate, CommentOut,
+    EngagementBlock, EngagementSessionStart, EngagementVote, EngagementVoteResult,
     IssueBase, IssueCreate, IssueOut, IssueUpdate, AdminIssueCreate,
     VisitorBase, VisitorCreate, VisitorOut
 )
@@ -21,6 +22,7 @@ __all__ = [
     "AnnouncementBase", "AnnouncementCreate", "AnnouncementOut",
     "EmotionCount", "UserReaction", "EmotionCreate",
     "CommentBase", "CommentCreate", "CommentOut",
+    "EngagementBlock", "EngagementSessionStart", "EngagementVote", "EngagementVoteResult",
     "IssueBase", "IssueCreate", "IssueOut", "IssueUpdate", "AdminIssueCreate",
     "VisitorBase", "VisitorCreate", "VisitorOut",
 ]

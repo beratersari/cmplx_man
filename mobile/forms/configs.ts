@@ -71,6 +71,14 @@ export const issueFormConfig: FormConfig = {
           required: true,
           options: [], // Will be populated dynamically
         },
+        {
+          name: FormFieldName.IssuePriority,
+          type: 'select',
+          labelKey: 'issues.form.priority',
+          placeholderKey: 'issues.form.selectPriority',
+          required: true,
+          options: [],
+        },
       ],
     },
   ],

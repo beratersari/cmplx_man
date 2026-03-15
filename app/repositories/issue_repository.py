@@ -4,7 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.models import IssueModel, IssueImageModel
-from app.core.entities import IssueStatus
+from app.core.entities import IssueStatus, IssuePriority
 from .base_repository import BaseRepository
 
 
@@ -18,34 +18,72 @@ class IssueRepository(BaseRepository[IssueModel]):
         self, 
         complex_id: int, 
         skip: int = 0, 
-        limit: int = 50
+        limit: int = 50,
+        category_id: Optional[int] = None,
+        status: Optional[IssueStatus] = None,
+        priority: Optional[IssuePriority] = None,
     ) -> List[IssueModel]:
-        """Get all issues for a specific complex."""
-        return self.db.query(IssueModel).filter(
-            IssueModel.complex_id == complex_id
-        ).offset(skip).limit(limit).all()
+        """Get all issues for a specific complex with optional filters."""
+        query = self._apply_issue_filters(
+            self.db.query(IssueModel),
+            category_id=category_id,
+            status=status,
+            priority=priority,
+        ).filter(IssueModel.complex_id == complex_id)
+        return query.offset(skip).limit(limit).all()
     
     def get_issues_by_user(
         self, 
         user_id: int, 
         skip: int = 0, 
-        limit: int = 50
+        limit: int = 50,
+        category_id: Optional[int] = None,
+        status: Optional[IssueStatus] = None,
+        priority: Optional[IssuePriority] = None,
     ) -> List[IssueModel]:
-        """Get all issues reported by a specific user."""
-        return self.db.query(IssueModel).filter(
-            IssueModel.user_id == user_id
-        ).offset(skip).limit(limit).all()
+        """Get all issues reported by a specific user with optional filters."""
+        query = self._apply_issue_filters(
+            self.db.query(IssueModel),
+            category_id=category_id,
+            status=status,
+            priority=priority,
+        ).filter(IssueModel.user_id == user_id)
+        return query.offset(skip).limit(limit).all()
     
     def get_issues_for_complexes(
         self, 
         complex_ids: List[int], 
         skip: int = 0, 
-        limit: int = 50
+        limit: int = 50,
+        category_id: Optional[int] = None,
+        status: Optional[IssueStatus] = None,
+        priority: Optional[IssuePriority] = None,
     ) -> List[IssueModel]:
-        """Get all issues for specified complexes."""
-        return self.db.query(IssueModel).filter(
-            IssueModel.complex_id.in_(complex_ids)
-        ).offset(skip).limit(limit).all()
+        """Get all issues for specified complexes with optional filters."""
+        query = self._apply_issue_filters(
+            self.db.query(IssueModel),
+            category_id=category_id,
+            status=status,
+            priority=priority,
+        ).filter(IssueModel.complex_id.in_(complex_ids))
+        return query.offset(skip).limit(limit).all()
+
+    def get_all_filtered(
+        self,
+        skip: int = 0,
+        limit: int = 50,
+        category_id: Optional[int] = None,
+        status: Optional[IssueStatus] = None,
+        priority: Optional[IssuePriority] = None,
+    ) -> List[IssueModel]:
+        """Get all issues with optional filters."""
+        query = self._apply_issue_filters(
+            self.db.query(IssueModel),
+            category_id=category_id,
+            status=status,
+            priority=priority,
+        )
+        return query.offset(skip).limit(limit).all()
     
     def create_issue_with_images(
         self, 
@@ -86,6 +124,43 @@ class IssueRepository(BaseRepository[IssueModel]):
             {"status": status, "count": count}
             for status, count in query.all()
         ]
+
+    def get_issue_heatmap_counts(
+        self,
+        complex_ids: Optional[List[int]] = None,
+        category_id: Optional[int] = None,
+        priority: Optional[IssuePriority] = None,
+    ) -> List[dict]:
+        """Get issue counts grouped by weekday and hour for heatmap."""
+        day_bucket = func.strftime('%w', IssueModel.created_date)
+        hour_bucket = func.strftime('%H', IssueModel.created_date)
+        query = self._apply_issue_filters(
+            self.db.query(day_bucket, hour_bucket, func.count(IssueModel.id)),
+            category_id=category_id,
+            priority=priority,
+        )
+        if complex_ids:
+            query = query.filter(IssueModel.complex_id.in_(complex_ids))
+        query = query.group_by(day_bucket, hour_bucket)
+        return [
+            {"day": int(day), "hour": int(hour), "count": count}
+            for day, hour, count in query.all()
+        ]
+
+    def _apply_issue_filters(
+        self,
+        query,
+        category_id: Optional[int] = None,
+        status: Optional[IssueStatus] = None,
+        priority: Optional[IssuePriority] = None,
+    ):
+        if category_id:
+            query = query.filter(IssueModel.category_id == category_id)
+        if status:
+            query = query.filter(IssueModel.status == status)
+        if priority:
+            query = query.filter(IssueModel.priority == priority)
+        return query
 
     def get_daily_counts(
         self,

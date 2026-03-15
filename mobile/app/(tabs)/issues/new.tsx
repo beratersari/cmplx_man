@@ -48,6 +48,17 @@ const NewIssueScreen = () => {
             })),
           };
         }
+        if (field.name === FormFieldName.IssuePriority) {
+          return {
+            ...field,
+            options: [
+              { value: 'LOW', labelKey: 'issues.priority.low' },
+              { value: 'MEDIUM', labelKey: 'issues.priority.medium' },
+              { value: 'HIGH', labelKey: 'issues.priority.high' },
+              { value: 'URGENT', labelKey: 'issues.priority.urgent' },
+            ],
+          };
+        }
         return field;
       }),
     })),
@@ -59,6 +70,7 @@ const NewIssueScreen = () => {
         title: data[FormFieldName.IssueTitle],
         description: data[FormFieldName.IssueDescription],
         category_id: data[FormFieldName.IssueCategory],
+        priority: data[FormFieldName.IssuePriority],
       }).unwrap();
       router.back();
     } catch (error) {
@@ -92,6 +104,14 @@ const NewIssueScreen = () => {
               value: cat.id,
               labelKey: cat.name,
             })),
+          },
+          [FormFieldName.IssuePriority]: {
+            options: [
+              { value: 'LOW', labelKey: 'issues.priority.low' },
+              { value: 'MEDIUM', labelKey: 'issues.priority.medium' },
+              { value: 'HIGH', labelKey: 'issues.priority.high' },
+              { value: 'URGENT', labelKey: 'issues.priority.urgent' },
+            ],
           },
         }}
       />

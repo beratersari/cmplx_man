@@ -16,6 +16,13 @@ class IssueStatus(str, Enum):
     CLOSED = "CLOSED"
 
 
+class IssuePriority(str, Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    URGENT = "URGENT"
+
+
 class ReservationStatus(str, Enum):
     PENDING = "PENDING"
     ACCEPTED = "ACCEPTED"

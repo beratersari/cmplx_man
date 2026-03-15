@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
-from app.core.entities import UserRole, IssueStatus, MarketplaceItemStatus, VisitorStatus, PaymentStatus, PaymentTargetType
+from app.core.entities import UserRole, IssueStatus, IssuePriority, MarketplaceItemStatus, VisitorStatus, PaymentStatus, PaymentTargetType
 
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")
@@ -156,7 +156,7 @@ class UserReaction(BaseModel):
     emoji: str
 
 class CommentBase(BaseModel):
-    content: str = Field(..., min_length=1)
+    content: str = Field(..., min_length=1, description="HTML content supported")
 
 class CommentCreate(CommentBase):
     """Schema for creating a top-level comment on an announcement."""
@@ -169,7 +169,8 @@ class ReplyCreate(CommentBase):
 class CommentOut(BaseModel):
     id: int
     content: str
-    announcement_id: int
+    announcement_id: Optional[int] = None
+    issue_id: Optional[int] = None
     parent_id: Optional[int]
     created_date: datetime
     created_by: Optional[int]
@@ -224,12 +225,41 @@ class IssueImageOut(BaseModel):
     class Config:
         from_attributes = True
 
+
+class EngagementBlock(BaseModel):
+    id: str
+    title: str
+    description: Optional[str] = None
+    block_type: str
+    options: List[dict]
+    metadata: Optional[dict] = None
+
+
+class EngagementSessionStart(BaseModel):
+    session_id: str
+    expires_at: datetime
+
+
+class EngagementVote(BaseModel):
+    session_id: str
+    block_id: str
+    option_id: str
+
+
+class EngagementVoteResult(BaseModel):
+    block_id: str
+    option_id: Optional[str] = None
+    totals: dict
+    session_expires_at: datetime
+
+
 class IssueBase(BaseModel):
     title: str = Field(..., min_length=3, max_length=100)
     description: str = Field(..., min_length=5)
 
 class IssueCreate(IssueBase):
     category_id: int = Field(..., gt=0, description="ID of the category for this issue")
+    priority: IssuePriority = IssuePriority.MEDIUM
     img_paths: List[str] = []
 
 class AdminIssueCreate(IssueCreate):
@@ -242,6 +272,7 @@ class IssueOut(IssueBase):
     building_id: int
     category_id: int
     status: IssueStatus
+    priority: IssuePriority
     created_date: datetime
     updated_date: Optional[datetime] = None
     updated_by: Optional[int] = None
@@ -254,6 +285,7 @@ class IssueUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=3, max_length=100)
     description: Optional[str] = Field(None, min_length=5)
     status: Optional[IssueStatus] = None
+    priority: Optional[IssuePriority] = None
 
 class IssueStatusSummary(BaseModel):
     open: int
@@ -362,6 +394,12 @@ class IssueCountByCategory(BaseModel):
     category_id: int
     category_name: str
     issue_count: int
+
+
+class IssueHeatmapPoint(BaseModel):
+    day: int
+    hour: int
+    count: int
 
 
 # Reservation Category Schemas

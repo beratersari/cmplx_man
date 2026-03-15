@@ -19,6 +19,10 @@ from .schemas import (
     IssueCountByBuilding,
     IssueCountByUser,
     IssueCountByCategory,
+    IssueHeatmapPoint,
+    CommentCreate,
+    ReplyCreate,
+    CommentOut,
 )
 
 router = APIRouter()
@@ -49,6 +53,9 @@ def admin_create_issue(
 @router.get("/", response_model=List[IssueOut], summary="List Issues", description="Retrieves a list of issues. Managers and attendants see all issues in their complexes. Residents see only their own reported issues.")
 def read_issues(
     complex_id: int = None,
+    category_id: int = None,
+    status: str = None,
+    priority: str = None,
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
@@ -56,7 +63,49 @@ def read_issues(
 ):
     """List issues."""
     service = IssueService(db)
-    return service.list_issues(current_user, complex_id, skip, limit)
+    return service.list_issues(
+        current_user,
+        complex_id,
+        skip,
+        limit,
+        category_id=category_id,
+        status=status,
+        priority=priority,
+    )
+
+
+@router.get("/heatmap", response_model=List[IssueHeatmapPoint], summary="Issue Heatmap", description="Get issue counts grouped by weekday and hour for the current user's complexes. Admins can specify a complex.")
+def get_issue_heatmap(
+    complex_id: int = None,
+    category_id: int = None,
+    priority: str = None,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get issue heatmap counts."""
+    service = IssueService(db)
+    if current_user.role == UserRole.ADMIN and complex_id:
+        return service.get_issue_heatmap_for_admin(
+            complex_id,
+            category_id=category_id,
+            priority=priority,
+        )
+    return service.get_issue_heatmap_for_user(
+        current_user,
+        category_id=category_id,
+        priority=priority,
+    )
+
+
+@router.get("/{issue_id}", response_model=IssueOut, summary="Get Issue", description="Get an issue by ID.")
+def get_issue_by_id(
+    issue_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get issue by ID."""
+    service = IssueService(db)
+    return service.get_issue_by_id(issue_id, current_user)
 
 
 @router.put("/{issue_id}", response_model=IssueOut, summary="Update Issue Status", description="Updates an issue's status or details. Restricted to Admins, Managers, or Attendants assigned to the complex. Workflow: OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED.")
@@ -69,6 +118,64 @@ def update_issue(
     """Update an issue."""
     service = IssueService(db)
     return service.update_issue(issue_id, issue_in, current_user)
+
+
+@router.get("/{issue_id}/comments", response_model=List[CommentOut], summary="Issue Comments", description="Get comments for an issue.")
+def get_issue_comments(
+    issue_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get comments for an issue."""
+    service = IssueService(db)
+    return service.get_issue_comments(issue_id, current_user)
+
+
+@router.post("/{issue_id}/comments", response_model=CommentOut, summary="Create Issue Comment", description="Create a top-level comment on an issue.")
+def create_issue_comment(
+    issue_id: int,
+    comment_in: CommentCreate,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Create a top-level comment on an issue."""
+    service = IssueService(db)
+    return service.add_issue_comment(issue_id, comment_in, current_user)
+
+
+@router.post("/{issue_id}/replies", response_model=CommentOut, summary="Create Issue Reply", description="Create a reply to a comment on an issue.")
+def create_issue_reply(
+    issue_id: int,
+    reply_in: ReplyCreate,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Create a reply to a comment on an issue."""
+    service = IssueService(db)
+    return service.add_issue_reply(issue_id, reply_in, current_user)
+
+
+@router.put("/comments/{comment_id}", response_model=CommentOut, summary="Update Issue Comment", description="Update a comment on an issue.")
+def update_issue_comment(
+    comment_id: int,
+    comment_in: CommentCreate,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Update a comment on an issue."""
+    service = IssueService(db)
+    return service.update_issue_comment(comment_id, comment_in, current_user)
+
+
+@router.delete("/comments/{comment_id}", summary="Delete Issue Comment", description="Delete a comment on an issue.")
+def delete_issue_comment(
+    comment_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Delete a comment on an issue."""
+    service = IssueService(db)
+    return service.delete_issue_comment(comment_id, current_user)
 
 
 @router.get("/stats/status", response_model=IssueStatusSummary, summary="Issue Status Summary (Manager)", description="Get issue counts grouped by status for the manager's complex.")

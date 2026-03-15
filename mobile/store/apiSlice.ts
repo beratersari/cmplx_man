@@ -186,15 +186,23 @@ export const enhancedApi = apiSlice.injectEndpoints({
       providesTags: [TagType.IssueCategory],
     }),
 
-    getIssues: builder.query<any[], { complexId?: number; skip?: number; limit?: number }>({
-      query: ({ complexId, skip = 0, limit = 20 } = {}) => {
+    getIssues: builder.query<any[], { complexId?: number; categoryId?: number; status?: string; priority?: string; skip?: number; limit?: number }>({
+      query: ({ complexId, categoryId, status, priority, skip = 0, limit = 20 } = {}) => {
         const params = new URLSearchParams({ skip: String(skip), limit: String(limit) });
         if (complexId) params.append('complex_id', String(complexId));
+        if (categoryId) params.append('category_id', String(categoryId));
+        if (status) params.append('status', status);
+        if (priority) params.append('priority', priority);
         return `/issues?${params.toString()}`;
       },
       providesTags: [TagType.Issue],
       serializeQueryArgs: ({ queryArgs }) => {
-        return { complexId: queryArgs.complexId };
+        return {
+          complexId: queryArgs.complexId,
+          categoryId: queryArgs.categoryId,
+          status: queryArgs.status,
+          priority: queryArgs.priority,
+        };
       },
       merge: (currentCache, newItems, { arg }) => {
         if (arg?.skip === 0) {
@@ -214,6 +222,18 @@ export const enhancedApi = apiSlice.injectEndpoints({
       },
     }),
 
+    getIssueHeatmap: builder.query<any[], { complexId?: number; categoryId?: number; priority?: string }>({
+      query: ({ complexId, categoryId, priority } = {}) => {
+        const params = new URLSearchParams();
+        if (complexId) params.append('complex_id', String(complexId));
+        if (categoryId) params.append('category_id', String(categoryId));
+        if (priority) params.append('priority', priority);
+        const queryString = params.toString();
+        return `/issues/heatmap${queryString ? `?${queryString}` : ''}`;
+      },
+      providesTags: [TagType.Issue],
+    }),
+
     createIssue: builder.mutation<any, any>({
       query: (issue) => ({
         url: '/issues',
@@ -221,6 +241,74 @@ export const enhancedApi = apiSlice.injectEndpoints({
         body: issue,
       }),
       invalidatesTags: [TagType.Issue],
+    }),
+
+    getIssueById: builder.query<any, number>({
+      query: (issueId) => `/issues/${issueId}`,
+      providesTags: (_, __, issueId) => [{ type: TagType.Issue, id: issueId }],
+    }),
+
+    getIssueComments: builder.query<any[], number>({
+      query: (issueId) => `/issues/${issueId}/comments`,
+      providesTags: [TagType.Issue],
+    }),
+
+    createIssueComment: builder.mutation<any, { issueId: number; content: string }>({
+      query: ({ issueId, content }) => ({
+        url: `/issues/${issueId}/comments`,
+        method: 'POST',
+        body: { content },
+      }),
+      invalidatesTags: [TagType.Issue],
+    }),
+
+    createIssueReply: builder.mutation<any, { issueId: number; parentId: number; content: string }>({
+      query: ({ issueId, parentId, content }) => ({
+        url: `/issues/${issueId}/replies`,
+        method: 'POST',
+        body: { parent_id: parentId, content },
+      }),
+      invalidatesTags: [TagType.Issue],
+    }),
+
+    // Engagement endpoints
+    getEngagementBlocks: builder.query<any[], void>({
+      query: () => '/engagement/blocks',
+      providesTags: [TagType.Engagement],
+    }),
+
+    startEngagementSession: builder.mutation<any, void>({
+      query: () => ({
+        url: '/engagement/sessions',
+        method: 'POST',
+      }),
+      invalidatesTags: [TagType.Engagement],
+    }),
+
+    endEngagementSession: builder.mutation<any, { sessionId: string }>({
+      query: ({ sessionId }) => ({
+        url: `/engagement/sessions/${sessionId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: [TagType.Engagement],
+    }),
+
+    castEngagementVote: builder.mutation<any, { sessionId: string; blockId: string; optionId: string }>({
+      query: ({ sessionId, blockId, optionId }) => ({
+        url: '/engagement/votes',
+        method: 'POST',
+        body: {
+          session_id: sessionId,
+          block_id: blockId,
+          option_id: optionId,
+        },
+      }),
+      invalidatesTags: [TagType.Engagement],
+    }),
+
+    getEngagementResults: builder.query<any, { blockId: string; sessionId: string }>({
+      query: ({ blockId, sessionId }) => `/engagement/results/${blockId}?session_id=${sessionId}`,
+      providesTags: [TagType.Engagement],
     }),
 
     // Reservation endpoints
@@ -412,7 +500,17 @@ export const {
   useGetAnnouncementsQuery,
   useGetIssueCategoriesQuery,
   useGetIssuesQuery,
+  useGetIssueHeatmapQuery,
   useCreateIssueMutation,
+  useGetIssueByIdQuery,
+  useGetIssueCommentsQuery,
+  useCreateIssueCommentMutation,
+  useCreateIssueReplyMutation,
+  useGetEngagementBlocksQuery,
+  useStartEngagementSessionMutation,
+  useEndEngagementSessionMutation,
+  useCastEngagementVoteMutation,
+  useGetEngagementResultsQuery,
   useCreateAnnouncementCommentMutation,
   useAddAnnouncementCommentReactionMutation,
   useGetReservationCategoriesQuery,

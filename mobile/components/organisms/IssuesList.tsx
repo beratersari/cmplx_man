@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Text } from '../atoms/Text';
 import { useTranslation } from '../../locales';
 
@@ -10,6 +10,7 @@ interface IssuesListProps {
   onRefresh: () => void;
   refreshing: boolean;
   hasMore: boolean;
+  onSelectIssue?: (issueId: number) => void;
 }
 
 export const IssuesList = ({
@@ -19,18 +20,40 @@ export const IssuesList = ({
   onRefresh,
   refreshing,
   hasMore,
+  onSelectIssue,
 }: IssuesListProps) => {
   const { t } = useTranslation();
 
   const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
-      <Text style={styles.title}>{item.title}</Text>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => onSelectIssue?.(item.id)}
+      activeOpacity={0.8}
+    >
+      <View style={styles.cardHeader}>
+        <Text style={styles.title}>{item.title}</Text>
+        <View style={styles.statusBadge}>
+          <Text style={styles.statusText}>{item.status}</Text>
+        </View>
+      </View>
       <Text style={styles.description}>{item.description}</Text>
       <View style={styles.metaRow}>
         <Text style={styles.meta}>{t('issues.issueTitle')} #{item.id}</Text>
-        <Text style={styles.meta}>{item.status}</Text>
+        <Text style={styles.meta}>{t('issues.priorityLabel') || 'Priority'}: {item.priority}</Text>
       </View>
-    </View>
+      {(item.updated_date || item.updated_by) && (
+        <View style={styles.updateRow}>
+          <Text style={styles.updateText}>
+            {t('issues.lastUpdated') || 'Last updated'}: {item.updated_date ? new Date(item.updated_date).toLocaleDateString() : ''}
+          </Text>
+          {item.updated_by && (
+            <Text style={styles.updateText}>
+              {t('issues.updatedBy') || 'Updated by'} #{item.updated_by}
+            </Text>
+          )}
+        </View>
+      )}
+    </TouchableOpacity>
   );
 
   const renderFooter = () => {
@@ -90,6 +113,23 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     lineHeight: 18,
   },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#eff6ff',
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#1d4ed8',
+  },
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -97,6 +137,13 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 12,
     color: '#9ca3af',
+  },
+  updateRow: {
+    marginTop: 8,
+  },
+  updateText: {
+    fontSize: 11,
+    color: '#6b7280',
   },
   emptyState: {
     paddingVertical: 48,

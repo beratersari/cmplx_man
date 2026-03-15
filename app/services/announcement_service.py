@@ -269,13 +269,15 @@ class AnnouncementService:
             announcement_id=announcement_id,
             content=comment_in.content,
             user_id=current_user.id,
-            parent_id=None
+            parent_id=None,
+            issue_id=None
         )
         
         return CommentOut(
             id=new_comment.id,
             content=new_comment.content,
             announcement_id=new_comment.announcement_id,
+            issue_id=new_comment.issue_id,
             parent_id=new_comment.parent_id,
             created_date=new_comment.created_date,
             created_by=new_comment.created_by,
@@ -309,13 +311,15 @@ class AnnouncementService:
             announcement_id=announcement_id,
             content=reply_in.content,
             user_id=current_user.id,
-            parent_id=reply_in.parent_id
+            parent_id=reply_in.parent_id,
+            issue_id=None
         )
         
         return CommentOut(
             id=new_reply.id,
             content=new_reply.content,
             announcement_id=new_reply.announcement_id,
+            issue_id=new_reply.issue_id,
             parent_id=new_reply.parent_id,
             created_date=new_reply.created_date,
             created_by=new_reply.created_by,
@@ -354,6 +358,7 @@ class AnnouncementService:
             id=comment.id,
             content=comment.content,
             announcement_id=comment.announcement_id,
+            issue_id=comment.issue_id,
             parent_id=comment.parent_id,
             created_date=comment.created_date,
             created_by=comment.created_by,
@@ -495,9 +500,12 @@ class AnnouncementService:
         
         return a_out
     
-    def _get_comment_tree(self, announcement_id: int, parent_id: int = None) -> List[CommentOut]:
+    def _get_comment_tree(self, announcement_id: Optional[int], parent_id: int = None, issue_id: Optional[int] = None) -> List[CommentOut]:
         """Recursively build comment tree."""
-        comments = self.announcement_repo.get_comments_by_announcement(announcement_id, parent_id)
+        if issue_id is not None:
+            comments = self.announcement_repo.get_comments_by_issue(issue_id, parent_id)
+        else:
+            comments = self.announcement_repo.get_comments_by_announcement(announcement_id, parent_id)
         
         result = []
         for c in comments:
@@ -508,12 +516,13 @@ class AnnouncementService:
                 id=c.id,
                 content=c.content,
                 announcement_id=c.announcement_id,
+                issue_id=c.issue_id,
                 parent_id=c.parent_id,
                 created_date=c.created_date,
                 created_by=c.created_by,
                 username=creator.username if creator else "Unknown",
                 emotion_counts=[EmotionCount(emoji=e.emoji, count=e.count) for e in emotion_counts],
-                replies=self._get_comment_tree(announcement_id, c.id)
+                replies=self._get_comment_tree(announcement_id, c.id, issue_id=issue_id)
             )
             result.append(c_out)
         return result

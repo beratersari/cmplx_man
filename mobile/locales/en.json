@@ -37,7 +37,15 @@
     "done": "Done",
     "select": "Select",
     "none": "None",
-    "preview": "Preview"
+    "preview": "Preview",
+    "sunday": "Sunday",
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "unit": "Unit"
   },
   "auth": {
     "login": {
@@ -92,6 +100,9 @@
     "searchPlaceholder": "Search issues...",
     "noIssuesFound": "No issues found",
     "issueTitle": "Title",
+    "priorityLabel": "Priority",
+    "lastUpdated": "Last updated",
+    "updatedBy": "Updated by",
     "category": "Category",
     "status": {
       "OPEN": "Open",
@@ -99,6 +110,27 @@
       "RESOLVED": "Resolved",
       "CLOSED": "Closed"
     },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "filters": {
+      "title": "Filters",
+      "complex": "Complex",
+      "searchComplex": "Search complexes",
+      "allComplexes": "All complexes",
+      "category": "Category",
+      "allCategories": "All categories",
+      "priority": "Priority",
+      "allPriorities": "All priorities"
+    },
+    "heatmapTitle": "Maintenance activity heatmap",
+    "heatmapSubtitle": "Issue volume by day and hour",
+    "heatmapHours": "Hours",
+    "heatmapLow": "Low",
+    "heatmapHigh": "High",
     "form": {
       "title": "Title",
       "titlePlaceholder": "Enter issue title",
@@ -126,7 +158,14 @@
       "step2Subtitle": "Choose the right category",
       "step3Title": "Review & Submit",
       "step3Subtitle": "Review your issue before submitting"
-    }
+    },
+    "detailsTitle": "Issue details",
+    "discussion": "Discussion",
+    "commentsEmpty": "No comments yet",
+    "writeCommentPlaceholder": "Type your message... Use **bold**, *italic*, __underline__, [link](url)",
+    "formatHint": "**bold**  *italic*  __underline__  [link](url)",
+    "previewModeHint": "Preview mode - showing formatted message",
+    "nothingToPreview": "Nothing to preview"
   },
   "reservations": {
     "title": "Facility Reservations",
@@ -166,7 +205,8 @@
       "invalidTimeFormat": "Invalid time format (HH:MM)",
       "personCountMin": "At least 1 person required",
       "overlapWarning": "This time slot may be busy",
-      "availableSlots": "Available Slots"
+      "availableSlots": "Available Slots",
+      "user": "User"
     },
     "multiStep": {
       "step1Title": "Select Facility",
@@ -416,8 +456,15 @@
     "payments": "Payments",
     "notifications": "Notifications",
     "announcements": "Announcements",
+    "engagement": "Engagement",
     "profile": "Profile",
     "settings": "Settings"
+  },
+  "engagement": {
+    "title": "Engagement",
+    "subtitle": "Quick polls, surveys, and feedback",
+    "sessionExpired": "Session ended. Reopen this tab to cast votes.",
+    "votes": "votes"
   },
   "notifications": {
     "title": "Notifications",

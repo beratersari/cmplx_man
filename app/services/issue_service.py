@@ -1,11 +1,12 @@
 from typing import List, Optional
 from datetime import datetime
+import json
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
-from app.repositories import IssueRepository, ComplexRepository, UserRepository, IssueCategoryRepository
-from app.models.models import UserModel, IssueModel
-from app.core.entities import UserRole, IssueStatus
+from app.repositories import IssueRepository, ComplexRepository, UserRepository, IssueCategoryRepository, AnnouncementRepository
+from app.models.models import UserModel, IssueModel, CommentModel
+from app.core.entities import UserRole, IssueStatus, IssuePriority
 from app.api.v1.schemas import (
     IssueCreate,
     IssueUpdate,
@@ -16,8 +17,14 @@ from app.api.v1.schemas import (
     IssueCountByBuilding,
     IssueCountByUser,
     IssueCountByCategory,
+    IssueHeatmapPoint,
+    CommentCreate,
+    ReplyCreate,
+    CommentOut,
+    EmotionCount,
 )
 from app.core.logging_config import logger
+from app.services.notification_service import NotificationService
 
 
 class IssueService:
@@ -29,6 +36,8 @@ class IssueService:
         self.complex_repo = ComplexRepository(db)
         self.user_repo = UserRepository(db)
         self.category_repo = IssueCategoryRepository(db)
+        self.comment_repo = AnnouncementRepository(db)
+        self.notification_service = NotificationService(db)
     
     def create_issue(
         self, 
@@ -60,6 +69,7 @@ class IssueService:
             "complex_id": complex_obj.id,
             "building_id": building_id,
             "category_id": issue_in.category_id,
+            "priority": issue_in.priority,
             "user_id": current_user.id,
         }
         
@@ -100,6 +110,7 @@ class IssueService:
             "complex_id": issue_in.complex_id,
             "building_id": building_id,
             "category_id": issue_in.category_id,
+            "priority": issue_in.priority,
             "user_id": current_user.id,
         }
         
@@ -111,11 +122,13 @@ class IssueService:
         
         return new_issue
     
-    def get_issue_by_id(self, issue_id: int) -> IssueModel:
+    def get_issue_by_id(self, issue_id: int, current_user: UserModel = None) -> IssueModel:
         """Get issue by ID or raise exception."""
         issue = self.issue_repo.get_by_id(issue_id)
         if not issue:
             raise HTTPException(status_code=404, detail="Issue not found")
+        if current_user:
+            self._validate_view_permission(current_user, issue)
         return issue
     
     def list_issues(
@@ -123,15 +136,41 @@ class IssueService:
         current_user: UserModel, 
         complex_id: int = None, 
         skip: int = 0, 
-        limit: int = 50
+        limit: int = 50,
+        category_id: int = None,
+        status: IssueStatus = None,
+        priority: IssuePriority = None,
     ) -> List[IssueModel]:
         """List issues based on current user's role."""
+        if status and isinstance(status, str):
+            try:
+                status = IssueStatus(status)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail="Invalid issue status") from exc
+        if priority and isinstance(priority, str):
+            try:
+                priority = IssuePriority(priority)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail="Invalid issue priority") from exc
         logger.trace(f"User {current_user.username} (ID: {current_user.id}) fetching issues")
         
         if current_user.role == UserRole.ADMIN:
             if complex_id:
-                return self.issue_repo.get_issues_by_complex(complex_id, skip, limit)
-            return self.issue_repo.get_all(skip, limit)
+                return self.issue_repo.get_issues_by_complex(
+                    complex_id,
+                    skip,
+                    limit,
+                    category_id=category_id,
+                    status=status,
+                    priority=priority,
+                )
+            return self.issue_repo.get_all_filtered(
+                skip,
+                limit,
+                category_id=category_id,
+                status=status,
+                priority=priority,
+            )
         
         # Filter by user's assigned complexes
         assigned_complex_ids = [c.id for c in current_user.assigned_complexes]
@@ -140,12 +179,33 @@ class IssueService:
             # See all issues in their complexes
             if complex_id:
                 if complex_id in assigned_complex_ids:
-                    return self.issue_repo.get_issues_by_complex(complex_id, skip, limit)
+                    return self.issue_repo.get_issues_by_complex(
+                        complex_id,
+                        skip,
+                        limit,
+                        category_id=category_id,
+                        status=status,
+                        priority=priority,
+                    )
                 return []
-            return self.issue_repo.get_issues_for_complexes(assigned_complex_ids, skip, limit)
+            return self.issue_repo.get_issues_for_complexes(
+                assigned_complex_ids,
+                skip,
+                limit,
+                category_id=category_id,
+                status=status,
+                priority=priority,
+            )
         else:
             # Residents see only their own
-            return self.issue_repo.get_issues_by_user(current_user.id, skip, limit)
+            return self.issue_repo.get_issues_by_user(
+                current_user.id,
+                skip,
+                limit,
+                category_id=category_id,
+                status=status,
+                priority=priority,
+            )
     
     def update_issue(
         self, 
@@ -172,10 +232,97 @@ class IssueService:
         if issue_in.status:
             logger.info(f"Issue ID {issue_id} status changing from {issue.status} to {issue_in.status} by {current_user.username}")
             update_data["status"] = issue_in.status
+        if issue_in.priority:
+            update_data["priority"] = issue_in.priority
         
         issue = self.issue_repo.update(issue, update_data, updated_by=current_user.id)
+        self._notify_issue_update(issue, current_user)
         logger.info(f"Issue ID {issue_id} updated successfully")
         return issue
+
+    def get_issue_comments(self, issue_id: int, current_user: UserModel):
+        """Get comments for an issue."""
+        issue = self.issue_repo.get_by_id(issue_id)
+        if not issue:
+            raise HTTPException(status_code=404, detail="Issue not found")
+        self._validate_view_permission(current_user, issue)
+        return self._build_issue_comment_tree(issue.id)
+
+    def add_issue_comment(self, issue_id: int, comment_in: CommentCreate, current_user: UserModel):
+        """Create a new top-level comment on an issue."""
+        issue = self.issue_repo.get_by_id(issue_id)
+        if not issue:
+            raise HTTPException(status_code=404, detail="Issue not found")
+        self._validate_view_permission(current_user, issue)
+        new_comment = self.comment_repo.create_comment(
+            announcement_id=None,
+            content=comment_in.content,
+            user_id=current_user.id,
+            parent_id=None,
+            issue_id=issue_id,
+        )
+        return self._build_issue_comment_out(new_comment)
+
+    def add_issue_reply(self, issue_id: int, reply_in: ReplyCreate, current_user: UserModel):
+        """Create a reply to a comment on an issue."""
+        issue = self.issue_repo.get_by_id(issue_id)
+        if not issue:
+            raise HTTPException(status_code=404, detail="Issue not found")
+        self._validate_view_permission(current_user, issue)
+        parent = self.comment_repo.get_comment_by_id(reply_in.parent_id)
+        if not parent or parent.issue_id != issue_id:
+            raise HTTPException(status_code=404, detail="Parent comment not found")
+        new_reply = self.comment_repo.create_comment(
+            announcement_id=None,
+            content=reply_in.content,
+            user_id=current_user.id,
+            parent_id=reply_in.parent_id,
+            issue_id=issue_id,
+        )
+        return self._build_issue_comment_out(new_reply)
+
+    def update_issue_comment(self, comment_id: int, comment_in: CommentCreate, current_user: UserModel):
+        """Update a comment on an issue (creator only)."""
+        comment = self.comment_repo.get_comment_by_id(comment_id)
+        if not comment or not comment.issue_id:
+            raise HTTPException(status_code=404, detail="Comment not found")
+        if comment.created_by != current_user.id:
+            raise HTTPException(status_code=403, detail="Only the creator can edit this comment")
+        comment = self.comment_repo.update_comment(comment, comment_in.content, current_user.id)
+        self.comment_repo.clear_comment_reactions(comment_id)
+        return self._build_issue_comment_out(comment)
+
+    def delete_issue_comment(self, comment_id: int, current_user: UserModel):
+        """Delete a comment on an issue."""
+        comment = self.comment_repo.get_comment_by_id(comment_id)
+        if not comment or not comment.issue_id:
+            raise HTTPException(status_code=404, detail="Comment not found")
+        if comment.created_by != current_user.id and current_user.role not in [UserRole.ADMIN, UserRole.SITE_MANAGER]:
+            raise HTTPException(status_code=403, detail="Not enough permissions")
+        self.comment_repo.delete_comment(comment)
+        return {"message": "Comment deleted successfully"}
+
+    def _build_issue_comment_tree(self, issue_id: int, parent_id: int = None):
+        """Recursively build issue comment tree."""
+        comments = self.comment_repo.get_comments_by_issue(issue_id, parent_id)
+        return [self._build_issue_comment_out(comment) for comment in comments]
+
+    def _build_issue_comment_out(self, comment: CommentModel) -> CommentOut:
+        """Build CommentOut for issue comments."""
+        creator = self.user_repo.get_by_id(comment.created_by) if comment.created_by else None
+        emotion_counts = self.comment_repo.get_comment_emotion_counts(comment.id)
+        return CommentOut(
+            id=comment.id,
+            content=comment.content,
+            announcement_id=comment.announcement_id,
+            issue_id=comment.issue_id,
+            parent_id=comment.parent_id,
+            created_date=comment.created_date,
+            created_by=comment.created_by,
+            username=creator.username if creator else "Unknown",
+            emotion_counts=[EmotionCount(emoji=e.emoji, count=e.count) for e in emotion_counts],
+            replies=self._build_issue_comment_tree(comment.issue_id, comment.id),
+        )
 
     def get_issue_status_summary_for_manager(
         self,
@@ -358,6 +505,42 @@ class IssueService:
         self._ensure_complex_exists(complex_id)
         return self._build_issue_counts_by_category([complex_id])
 
+    def get_issue_heatmap_for_user(
+        self,
+        current_user: UserModel,
+        category_id: int = None,
+        priority: IssuePriority = None,
+    ) -> List[IssueHeatmapPoint]:
+        """Get issue heatmap data for the current user's complexes."""
+        if priority and isinstance(priority, str):
+            try:
+                priority = IssuePriority(priority)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail="Invalid issue priority") from exc
+        complex_ids = [complex.id for complex in current_user.assigned_complexes]
+        building_complex_ids = [building.complex_id for building in current_user.assigned_buildings]
+        complex_ids = list({*complex_ids, *building_complex_ids})
+        if not complex_ids and current_user.role == UserRole.ADMIN:
+            complex_ids = [complex.id for complex in self.complex_repo.get_all_active()]
+        if not complex_ids:
+            raise HTTPException(status_code=400, detail="User is not assigned to any complex")
+        return self._build_issue_heatmap(complex_ids, category_id, priority)
+
+    def get_issue_heatmap_for_admin(
+        self,
+        complex_id: int,
+        category_id: int = None,
+        priority: IssuePriority = None,
+    ) -> List[IssueHeatmapPoint]:
+        """Get issue heatmap data for a specific complex (admin)."""
+        if priority and isinstance(priority, str):
+            try:
+                priority = IssuePriority(priority)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail="Invalid issue priority") from exc
+        self._ensure_complex_exists(complex_id)
+        return self._build_issue_heatmap([complex_id], category_id, priority)
+
     def _build_issue_counts_by_category(self, complex_ids: List[int]) -> List[IssueCountByCategory]:
         """Build issue counts grouped by category for complexes."""
         items = self.issue_repo.get_issue_counts_by_category(complex_ids)
@@ -366,6 +549,27 @@ class IssueService:
                 category_id=item["category_id"],
                 category_name=item["category_name"],
                 issue_count=item["count"],
+            )
+            for item in items
+        ]
+
+    def _build_issue_heatmap(
+        self,
+        complex_ids: List[int],
+        category_id: int = None,
+        priority: IssuePriority = None,
+    ) -> List[IssueHeatmapPoint]:
+        """Build issue heatmap points for complexes."""
+        items = self.issue_repo.get_issue_heatmap_counts(
+            complex_ids=complex_ids,
+            category_id=category_id,
+            priority=priority,
+        )
+        return [
+            IssueHeatmapPoint(
+                day=item["day"],
+                hour=item["hour"],
+                count=item["count"],
             )
             for item in items
         ]
@@ -391,6 +595,27 @@ class IssueService:
         """Ensure the complex exists."""
         if not self.complex_repo.get_by_id(complex_id):
             raise HTTPException(status_code=404, detail="Complex not found")
+
+    def _notify_issue_update(self, issue: IssueModel, current_user: UserModel) -> None:
+        """Notify the issue reporter about updates."""
+        if issue.user_id == current_user.id:
+            return
+        title = f"Issue #{issue.id} updated"
+        message = f"{issue.title} is now {issue.status.value} ({issue.priority.value} priority)."
+        data = {
+            "issue_id": issue.id,
+            "status": issue.status.value,
+            "priority": issue.priority.value,
+            "updated_by": current_user.id,
+        }
+
+        self.notification_service.create_notification(
+            user_id=issue.user_id,
+            notification_type="issue_update",
+            title=title,
+            message=message,
+            data=json.dumps(data),
+        )
     
     def _validate_update_permission(self, current_user: UserModel, issue: IssueModel):
         """Validate if current user can update the issue."""
@@ -404,3 +629,14 @@ class IssueService:
         if current_user.role not in [UserRole.SITE_MANAGER, UserRole.SITE_ATTENDANT]:
             logger.warning(f"Unauthorized update attempt on issue ID {issue.id} by {current_user.username} (not staff)")
             raise HTTPException(status_code=403, detail="Only staff (Managers/Attendants) can update issue status")
+
+    def _validate_view_permission(self, current_user: UserModel, issue: IssueModel):
+        """Validate if current user can view the issue."""
+        if current_user.role == UserRole.ADMIN:
+            return
+        if current_user.role in [UserRole.SITE_MANAGER, UserRole.SITE_ATTENDANT]:
+            if issue.complex in current_user.assigned_complexes:
+                return
+            raise HTTPException(status_code=403, detail="Not enough permissions for this complex")
+        if issue.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not enough permissions to view this issue")
