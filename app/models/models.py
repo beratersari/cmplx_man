@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum as SQLEnum, Table
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from enum import Enum
 from app.core.database import Base
 from app.core.entities import UserRole, IssueStatus, ReservationStatus, MarketplaceItemStatus, VisitorStatus, PaymentStatus, PaymentTargetType
 
@@ -152,6 +153,11 @@ class UserModel(Base, AuditMixin):
     reservations = relationship("ReservationModel", back_populates="user")
     marketplace_items = relationship("MarketplaceItemModel", back_populates="user")
     payment_records = relationship("PaymentRecordModel", back_populates="user")
+    notifications = relationship("NotificationModel", back_populates="user", cascade="all, delete-orphan")
+    # Notification preferences
+    push_notifications_enabled = Column(Boolean, default=True)
+    email_notifications_enabled = Column(Boolean, default=True)
+    payment_reminder_days = Column(Integer, default=3)  # Days before due date to remind
 
 class IssueModel(Base, AuditMixin):
     __tablename__ = "issues"
@@ -308,3 +314,31 @@ class PaymentRecordModel(Base, AuditMixin):
 
     payment = relationship("PaymentModel", back_populates="records")
     user = relationship("UserModel", back_populates="payment_records")
+
+
+class NotificationType(str, Enum):
+    """Notification types."""
+    PAYMENT_REMINDER = "payment_reminder"
+    PAYMENT_CREATED = "payment_created"
+    PAYMENT_UPDATED = "payment_updated"
+    ANNOUNCEMENT = "announcement"
+    ISSUE_UPDATE = "issue_update"
+    VISITOR_UPDATE = "visitor_update"
+    GENERAL = "general"
+
+
+class NotificationModel(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    type = Column(SQLEnum(NotificationType), default=NotificationType.GENERAL)
+    title = Column(String, nullable=False)
+    message = Column(String, nullable=True)
+    data = Column(String, nullable=True)  # JSON string for additional data
+    is_read = Column(Boolean, default=False)
+    scheduled_at = Column(DateTime, nullable=True)  # For scheduled reminders
+    sent_at = Column(DateTime, nullable=True)
+    created_date = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("UserModel", back_populates="notifications")

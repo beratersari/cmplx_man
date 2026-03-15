@@ -334,6 +334,64 @@ export const enhancedApi = apiSlice.injectEndpoints({
       providesTags: [TagType.Payment],
     }),
 
+    // Get current user's payment records
+    getMyUnitPayments: builder.query<any[], { skip?: number; limit?: number }>({
+      query: ({ skip = 0, limit = 50 } = {}) => {
+        const params = new URLSearchParams({ skip: String(skip), limit: String(limit) });
+        return `/payments/my/unit-payments?${params.toString()}`;
+      },
+      providesTags: [TagType.Payment],
+    }),
+
+    // Generate QR payment payload
+    generateQrPayment: builder.mutation<any, { paymentRecordId: number }>({
+      query: ({ paymentRecordId }) => ({
+        url: `/payments/my/qr-payment?payment_record_id=${paymentRecordId}`,
+        method: 'POST',
+      }),
+      invalidatesTags: [TagType.Payment],
+    }),
+
+    // Notification endpoints
+    getMyNotifications: builder.query<any[], { skip?: number; limit?: number; unreadOnly?: boolean }>({
+      query: ({ skip = 0, limit = 20, unreadOnly = false } = {}) => {
+        const params = new URLSearchParams({ skip: String(skip), limit: String(limit) });
+        if (unreadOnly) params.append('unread_only', 'true');
+        return `/notifications?${params.toString()}`;
+      },
+      providesTags: ['Notification'],
+    }),
+
+    markNotificationRead: builder.mutation<void, number>({
+      query: (notificationId) => ({
+        url: `/notifications/${notificationId}/read`,
+        method: 'PUT',
+      }),
+      invalidatesTags: ['Notification'],
+    }),
+
+    markAllNotificationsRead: builder.mutation<void, void>({
+      query: () => ({
+        url: '/notifications/read-all',
+        method: 'PUT',
+      }),
+      invalidatesTags: ['Notification'],
+    }),
+
+    getNotificationPreferences: builder.query<any, void>({
+      query: () => '/notifications/preferences',
+      providesTags: ['Notification'],
+    }),
+
+    updateNotificationPreferences: builder.mutation<any, Record<string, any>>({
+      query: (preferences) => ({
+        url: '/notifications/preferences',
+        method: 'PUT',
+        body: preferences,
+      }),
+      invalidatesTags: ['Notification'],
+    }),
+
     // Check overlap stats for reservations
     getReservationOverlapStats: builder.query<any, { categoryId: number; date: string; startHour: string; endHour: string }>({
       query: ({ categoryId, date, startHour, endHour }) =>
@@ -368,6 +426,13 @@ export const {
   useGetMarketplaceItemsQuery,
   useCreateMarketplaceItemMutation,
   useGetPaymentsQuery,
+  useGetMyUnitPaymentsQuery,
+  useGenerateQrPaymentMutation,
+  useGetMyNotificationsQuery,
+  useMarkNotificationReadMutation,
+  useMarkAllNotificationsReadMutation,
+  useGetNotificationPreferencesQuery,
+  useUpdateNotificationPreferencesMutation,
   useGetReservationOverlapStatsQuery,
 } = enhancedApi;
 

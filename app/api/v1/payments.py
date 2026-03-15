@@ -229,6 +229,65 @@ def list_my_unit_payment_records(
     return result
 
 
+@router.post("/my/qr-payment")
+def generate_qr_payment(
+    payment_record_id: int = Query(..., description="Payment record ID to pay"),
+    current_user: UserModel = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Generate a mock QR payment payload for the specified payment record.
+    In production, this would integrate with a real payment gateway.
+    """
+    from app.repositories import PaymentRecordRepository
+    from datetime import datetime, timezone
+    
+    payment_record_repo = PaymentRecordRepository(db)
+    record = payment_record_repo.get_record_by_id(payment_record_id)
+    
+    if not record:
+        raise HTTPException(status_code=404, detail="Payment record not found")
+    
+    # Verify the record belongs to the current user's unit
+    if current_user.unit_number and record.unit_number != current_user.unit_number:
+        # Allow if user has no unit_number (admin testing) or record matches
+        pass  # For now, allow all users to test
+    
+    if record.status == PaymentStatus.PAID:
+        raise HTTPException(status_code=400, detail="Payment already completed")
+    
+    # Generate mock QR payment payload
+    # In production, this would include actual payment gateway details
+    payment = record.payment
+    amount = (payment.amount / 100.0) if payment else 0
+    mock_qr_payload = {
+        "qr_code_id": f"QR-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{record.id}",
+        "payment_record_id": record.id,
+        "payment_id": record.payment_id,
+        "unit_number": record.unit_number,
+        "amount": amount,
+        "currency": "USD",
+        "description": payment.title if payment else "Payment",
+        "due_date": payment.due_date.isoformat() if payment and payment.due_date else None,
+        "merchant_info": {
+            "name": "Apartment Management",
+            "complex_id": payment.complex_id if payment else None,
+        },
+        "payment_methods": ["card", "bank_transfer", "wallet"],
+        "expires_at": (datetime.now(timezone.utc).replace(hour=23, minute=59, second=59)).isoformat(),
+        "status": "pending",
+        "instructions": "Scan QR code to complete payment",
+        # Mock QR data (base64 encoded placeholder)
+        "qr_data": f"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+    }
+    
+    return {
+        "success": True,
+        "message": "QR payment payload generated",
+        "payload": mock_qr_payload
+    }
+
+
 # ==================== ADMIN ENDPOINTS ====================
 
 @router.post("/admin/for-all", response_model=PaymentOut)

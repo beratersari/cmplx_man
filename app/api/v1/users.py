@@ -7,7 +7,7 @@ from app.models.models import UserModel
 from app.core.entities import UserRole
 from app.api.deps import get_current_user, RoleChecker
 from app.services import UserService
-from .schemas import UserCreate, UserOut, UserUpdate
+from .schemas import UserCreate, UserOut, UserUpdate, ComplexSummary
 
 router = APIRouter()
 
@@ -26,7 +26,26 @@ def create_user(
 @router.get("/me", response_model=UserOut, summary="Get Current User", description="Retrieves the profile information of the currently authenticated user.")
 def read_user_me(current_user: UserModel = Depends(get_current_user)):
     """Get current user profile."""
-    return current_user
+    # Build response with complex info
+    user_data = {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "role": current_user.role,
+        "is_active": current_user.is_active,
+        "contact": current_user.contact,
+        "description": current_user.description,
+        "unit_number": current_user.unit_number,
+        "created_date": current_user.created_date,
+        "created_by": current_user.created_by,
+        "updated_date": current_user.updated_date,
+        "updated_by": current_user.updated_by,
+        "assigned_complexes": [
+            {"id": c.id, "name": c.name} 
+            for c in current_user.assigned_complexes
+        ] if current_user.assigned_complexes else []
+    }
+    return user_data
 
 
 @router.get("/", response_model=List[UserOut], summary="List Users", description="Retrieves a list of users. Admins can see all users in the system. Other users can only see their own profile in this list.")

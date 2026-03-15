@@ -193,6 +193,49 @@ def seed_mock_data(db: Session):
     user_service.update_user(resident8.id, UserUpdate(unit_number="202"), admin_user)
     user_service.update_user(resident9.id, UserUpdate(unit_number="A-18"), admin_user)
     user_service.update_user(resident10.id, UserUpdate(unit_number="C-01"), admin_user)
+    # Assign unit to attendant1 for payment tracking testing
+    user_service.update_user(attendant1.id, UserUpdate(unit_number="ATT-001"), admin_user)
+
+    # 5.6. Create Payment Records for Testing
+    # Create monthly maintenance fee for all units in complex_a
+    today = datetime.utcnow()
+    payment1 = payment_service.create_payment_for_all(
+        PaymentCreateForAll(
+            title="Monthly Maintenance Fee - April",
+            amount=150.00,
+            due_date=today + timedelta(days=15)
+        ),
+        manager1
+    )
+    # Create parking fee for all units in complex_a
+    payment2 = payment_service.create_payment_for_all(
+        PaymentCreateForAll(
+            title="Monthly Parking Fee - April",
+            amount=50.00,
+            due_date=today + timedelta(days=10)
+        ),
+        manager1
+    )
+    # Create a past payment (will show as overdue/unpaid since not marked paid)
+    # User can manually mark as paid via the app to see "Past" category
+    payment3 = payment_service.create_payment_for_all(
+        PaymentCreateForAll(
+            title="Monthly Maintenance Fee - March",
+            amount=150.00,
+            due_date=today - timedelta(days=30)
+        ),
+        manager1
+    )
+    # Create a special assessment for specific units
+    payment4 = payment_service.create_payment_for_specific(
+        PaymentCreateForSpecific(
+            title="Elevator Repair Assessment",
+            amount=75.00,
+            unit_numbers=["101", "102", "ATT-001"],
+            due_date=today + timedelta(days=45)
+        ),
+        manager1
+    )
 
     # 6. Create Announcements (Manager creates announcements in their complex)
     announcement1 = announcement_service.create_announcement(

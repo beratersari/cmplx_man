@@ -25,6 +25,14 @@ class UserUpdate(BaseModel):
     complex_ids: Optional[List[int]] = None
     building_ids: Optional[List[int]] = None
 
+class ComplexSummary(BaseModel):
+    """Minimal complex info for user profile."""
+    id: int
+    name: str
+
+    class Config:
+        from_attributes = True
+
 class UserOut(BaseModel):
     id: int
     username: str
@@ -38,6 +46,12 @@ class UserOut(BaseModel):
     created_by: Optional[int]
     updated_date: Optional[datetime]
     updated_by: Optional[int]
+    # Complex assignment info
+    assigned_complexes: List[ComplexSummary] = []
+    # Notification preferences
+    push_notifications_enabled: bool = True
+    email_notifications_enabled: bool = True
+    payment_reminder_days: int = 3
 
     class Config:
         from_attributes = True
@@ -641,3 +655,41 @@ class PaymentsByBuilding(BaseModel):
     building_id: int
     building_name: str
     records: List[PaymentRecordInBuilding]
+
+
+# Notification schemas
+class NotificationType(str):
+    PAYMENT_REMINDER = "payment_reminder"
+    PAYMENT_CREATED = "payment_created"
+    PAYMENT_UPDATED = "payment_updated"
+    ANNOUNCEMENT = "announcement"
+    ISSUE_UPDATE = "issue_update"
+    VISITOR_UPDATE = "visitor_update"
+    GENERAL = "general"
+
+
+class NotificationOut(BaseModel):
+    id: int
+    type: str
+    title: str
+    message: Optional[str] = None
+    data: Optional[str] = None
+    is_read: bool = False
+    scheduled_at: Optional[datetime] = None
+    sent_at: Optional[datetime] = None
+    created_date: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class NotificationPreferenceUpdate(BaseModel):
+    push_notifications_enabled: Optional[bool] = None
+    email_notifications_enabled: Optional[bool] = None
+    payment_reminder_days: Optional[int] = None
+
+
+class ScheduledReminderCreate(BaseModel):
+    payment_record_id: int
+    reminder_date: datetime
+    message: Optional[str] = None

@@ -39,6 +39,27 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Ionicons size={24} name="alert-circle-outline" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="reservations"
+        options={{
+          title: t('navigation.reservations'),
+          tabBarIcon: ({ color }) => <Ionicons size={24} name="calendar-outline" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="payments"
+        options={{
+          title: t('navigation.payments'),
+          tabBarIcon: ({ color }) => <Ionicons size={24} name="wallet-outline" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: t('navigation.notifications'),
+          tabBarIcon: ({ color }) => <Ionicons size={24} name="notifications-outline" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }

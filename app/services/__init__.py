@@ -12,6 +12,7 @@ from .reservation_service import ReservationService
 from .marketplace_category_service import MarketplaceCategoryService
 from .marketplace_item_service import MarketplaceItemService
 from .payment_service import PaymentService
+from .notification_service import NotificationService
 
 __all__ = [
     "UserService",
@@ -28,4 +29,5 @@ __all__ = [
     "MarketplaceCategoryService",
     "MarketplaceItemService",
     "PaymentService",
+    "NotificationService",
 ]

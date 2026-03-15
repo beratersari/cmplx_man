@@ -1,4 +1,5 @@
 from typing import List, Optional
+from datetime import datetime
 from sqlalchemy.orm import Session
 from app.repositories.base_repository import BaseRepository
 from app.models.models import PaymentModel, PaymentRecordModel
@@ -87,3 +88,16 @@ class PaymentRecordRepository(BaseRepository[PaymentRecordModel]):
         for record in db_records:
             self.db.refresh(record)
         return db_records
+    
+    def update_record_status(self, record: PaymentRecordModel, status: PaymentStatus, paid_date: Optional[datetime] = None) -> PaymentRecordModel:
+        """Update the status of a payment record."""
+        record.status = status
+        if status == PaymentStatus.PAID and paid_date:
+            record.paid_date = paid_date
+        self.db.commit()
+        self.db.refresh(record)
+        return record
+    
+    def get_record_by_id(self, record_id: int) -> Optional[PaymentRecordModel]:
+        """Get a payment record by ID."""
+        return self.db.query(PaymentRecordModel).filter(PaymentRecordModel.id == record_id).first()

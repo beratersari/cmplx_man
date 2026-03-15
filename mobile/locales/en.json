@@ -137,6 +137,14 @@
     "dateTime": "Date & Time",
     "people": "People",
     "category": "Category",
+    "errors": {
+      "noComplexAssigned": "You are not assigned to any complex. Please contact an administrator.",
+      "accessDenied": "You do not have permission to view reservations."
+    },
+    "contact": {
+      "title": "Contact Support:",
+      "call": "Call"
+    },
     "status": {
       "PENDING": "Pending",
       "ACCEPTED": "Accepted",
@@ -267,8 +275,8 @@
     }
   },
   "payments": {
-    "title": "Payments",
-    "subtitle": "View and manage your payments",
+    "title": "My Payments",
+    "subtitle": "Track your dues and payments",
     "noPaymentsFound": "No payments found",
     "paymentTitle": "Payment Title",
     "amount": "Amount",
@@ -279,7 +287,17 @@
       "OVERDUE": "Overdue",
       "CANCELLED": "Cancelled"
     },
-    "markAsPaid": "Mark as Paid"
+    "markAsPaid": "Mark as Paid",
+    "unpaid": "Unpaid",
+    "planned": "Planned",
+    "past": "Past",
+    "payWithQr": "Pay with QR",
+    "qrPayment": "QR Payment",
+    "scanQr": "Scan to pay",
+    "qrCodeId": "QR Code ID",
+    "expiresAt": "Expires",
+    "mockComplete": "Mock Complete Payment",
+    "noPayments": "No payments found"
   },
   "announcements": {
     "title": "Announcements",
@@ -396,8 +414,21 @@
     "vehicles": "Vehicles",
     "marketplace": "Marketplace",
     "payments": "Payments",
+    "notifications": "Notifications",
     "announcements": "Announcements",
     "profile": "Profile",
     "settings": "Settings"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "preferences": "Preferences",
+    "pushEnabled": "Push Notifications",
+    "emailEnabled": "Email Notifications",
+    "reminderDays": "Payment Reminder Days",
+    "all": "All",
+    "unread": "Unread",
+    "markAllRead": "Mark all read",
+    "noNotifications": "No notifications",
+    "noUnread": "No unread notifications"
   }
 }
